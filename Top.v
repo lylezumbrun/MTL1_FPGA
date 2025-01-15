@@ -1,71 +1,67 @@
 module top (
-    // External I/O ports
-    inout [7:0] data_bus,    // 8-bit bidirectional data bus
-    input [15:0] address_bus,// 16-bit address bus
-    input r_w,               // Read/Write control signal
-    input e,                 // Enable signal from 6809
-    input q,                 // Phase signal from 6809
-	input ba,
-	input bs,
-    output sram_we,          // SRAM Write Enable
-	output sram_re,		//SRAM Read Enable
-	output sram_ce,		// SRAM Chip enable active low
-	output sram_ce2,		// SRAM Chip Enable active high
-	output halt,
-	output reset,
-	output firq,
-	output irq,
-	output control2_oe,
-	output control1_oe,
-	output dbus_oe,
-	output abus_oe,
-	output dben,
-	output dma,
-	output mrdy
-	
-	
+    // MTL1 6809 interface
+    inout [7:0] DATA_BUS,    // 8-bit bidirectional data bus
+    input [15:0] i_ADDRESS_BUS,// 16-bit address bus
+    input i_RW,               // Read/Write control signal from 6809
+    input i_E,                 // Enable signal from 6809
+    input i_Q,                 // Phase signal from 6809
+	input i_BA,  // used to indicate that the buses (address and data) and the read/write output are in the high-impedance state
+	input i_BS,  // indicates whether the CPU is currently actively using the system bus
+    output o_WE,          // SRAM Write Enable
+	output o_RE,		//SRAM Read Enable
+	output o_CE,		// SRAM Chip enable active low
+	output o_CE2,		// SRAM Chip Enable active high
+    output o_HALT,    // Assert HALT signal to 6809
+    output o_RESET,   // Assert RESET signal to 6809
+	output o_FIRQ,    // Assert a fast interrupt to 6809
+	output o_IRQ,   // Assert a interrupt to 6809
+	output o_CONTROL2_OE, // Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
+	output o_CONTROL1_OE, // Enable Bidirectional Voltage-Level Translator for DBEN, Q, BS, MRDY, DMA, R/W, E, BA
+	output o_DBUS_OE, // Enable Bidirectional Voltage-Level Translator for Data bus
+	output o_ABUS_OE, // Enable Bidirectional Voltage-Level Translator Address Bus
+	output o_DBEN, // Assert low to force 6809 disconnect from databus to high impedance state
+	output o_DMA, // Assert low to suspend program execution and make the buses available for another use such as a direct memory access or a dynamic memory refresh.
+	output o_MRDY, // driving MRDY low indicates that "memory is not ready". The 6809 will then stretch the E and Q clocks by multiples of a quarter period. If a peripheral needs to be accessed that happens to be slow, the CPU effectively stalls until the peripheral is ready
+    // FT2232 SPI Interface used to write a ROM file to flash connected to FPGA
+    input i_FT_SCK,         // SPI Clock from FT2232
+    input i_FT_MOSI,        // Master Out, Slave In (FT2232 to FPGA)
+    output o_FT_MISO,       // Master In, Slave Out (FPGA to FT2232)
+    input i_FT_CS,         // Chip Select from FT2232
+    // FT2232 UART Interface for 6809 to read and write to a terminal
+    output o_UART_RX, 
+    input i_UART_TX,
+    output o_UART_RTS,
+    output i_UART_CTS,
+    // FLASH SPI Interface for 6809 ROM
+    output o_SPI_CLK,
+    output o_SPI_MOSI,
+    output o_SPI_CS,
+    input i_SPI_MISO
 
-    // FT2232 Interface
-    input usb_clk,           // FT2232 Clock
-    inout usb_data           // FT2232 Data lines
+
 );
 
-    // Internal signals
-    wire sram_selected;
-    wire flash_selected;
 	wire clk_internal;
 	
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("12.00") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
+        .NOM_FREQ("133.0") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low)
         .OSC(clk_internal), // Oscillator output
         .SEDSTDBY()         // Status (unused here)
     );
 
-	
-	
 
-    // Instantiate the Address Decoder
-    address_decoder addr_dec (
-        .address_bus(address_bus),
-        .sram_selected(sram_selected),
-        .flash_selected(flash_selected)
+    // SPI Master for Flash
+    spi_flash_master flash_spi (
+        .clk(clk_internal),
+        .mosi(o_SPI_MOSI),
+        .miso(i_SPI_MISO),
+        .sck(o_SPI_CLK),
+        .cs(o_SPI_CS)
     );
 
-    // Instantiate the Memory Controller
-    memory_controller mem_ctrl (
-        .clk(clk),
-        .reset_n(reset_n),
-        .r_w(r_w),
-        .sram_we(sram_we),
-        .sram_oe(sram_oe),
-        .sram_addr(sram_addr),
-        .sram_data(sram_data),
-        .sram_selected(sram_selected),
-        .flash_selected(flash_selected)
-    );
 
     // Add additional submodules as needed
 endmodule
