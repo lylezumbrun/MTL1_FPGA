@@ -52,9 +52,27 @@ module top (
         .SEDSTDBY()         // Status (unused here)
     );
 
+    // Instantiate the address decoder
+    address_decoder addr_dec (
+        .address(i_ADDRESS_BUS),
+        .sram_ce(sram_ce),
+        .spi_cs(spi_cs)
+    );
 
-    // SPI Master for Flash
-    spi_flash_master flash_spi (
+    // SRAM Controller (activated by sram_ce)
+    sram_controller sram_ctrl (
+        .address(i_ADDRESS_BUS),
+        .rw(i_RW),
+        .enable(i_E),
+        .q(i_Q),
+        .we(o_WE),
+        .re(o_RE),
+        .ce(o_CE),
+        .ce2(o_CE2)
+    );
+
+    // SPI Master for Flash (activated by spi_cs)
+    spi_master flash_spi (
         .clk(clk_internal),
         .mosi(o_SPI_MOSI),
         .miso(i_SPI_MISO),
