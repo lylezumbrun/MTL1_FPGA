@@ -51,8 +51,8 @@ module top (
         .OSC(clk_internal), // Oscillator output
         .SEDSTDBY()         // Status (unused here)
     );
-
-    // Instantiate the address decoder
+    // Address Decoder -  SRAM range: 0x0000 to 0x0FFF (4KB),  SPI flash 0xF000 to 0xFFFF
+    // Instantiate the address decoder, this decodes the addresses and activates either the sram_ce or spi_cs. 
     address_decoder addr_dec (
         .address(i_ADDRESS_BUS),
         .sram_ce(sram_ce),
