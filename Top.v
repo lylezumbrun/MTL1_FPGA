@@ -44,7 +44,16 @@ module top (
 	wire clk_internal;
     wire sram_ce;
     wire spi_ce;
-	
+
+    wire spi_clk_writer;
+    wire spi_mosi_writer;
+    wire spi_cs_writer;
+
+    wire spi_clk_ctrl;
+    wire spi_mosi_ctrl;
+    wire spi_cs_ctrl;
+	wire spi_data;
+    
 	   // Instantiate the internal oscillator
     OSCH #(
         .NOM_FREQ("133.0") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
@@ -59,18 +68,18 @@ module top (
         .i_FT_CS(i_FT_CS),
         .address(i_ADDRESS_BUS),
         .sram_ce(sram_ce),
-        .spi_cs(spi_ce)
+        .spi_ce(spi_ce)
     );
 
     // SRAM Controller (activated by sram_ce)
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
-        .rw(i_RW),
-        .enable(i_E),
-        .we(o_WE),
-        .re(o_RE),
-        .ce(o_CE),
-        .ce2(o_CE2)
+        .i_RW(i_RW),
+        .i_E(i_E),
+        .o_WE(o_WE),
+        .o_RE(o_RE),
+        .o_CE(o_CE),
+        .o_CE2(o_CE2)
     );
 
     // SPI Master for Flash (activated by spi_ce)
@@ -79,31 +88,34 @@ module top (
         .spi_ce(spi_ce),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_RW(i_RW),
-        .clk(clk),
+        .clk(clk_internal),
         .i_SPI_MISO(i_SPI_MISO),
-        .o_SPI_CLK(o_SPI_CLK),
-        .o_SPI_MOSI(o_SPI_MOSI),
-        .o_SPI_CS(o_SPI_CS),
+        .o_SPI_CLK(spi_clk_ctrl),
+        .o_SPI_MOSI(spi_mosi_ctrl),
+        .o_SPI_CS(spi_cs_ctrl),
         .o_DATA(spi_data)
     );
 
     spi_flash_writer spi_writer (
-        .clk_internal(clk_internal),
         .i_FT_CS(i_FT_CS),
         .i_FT_SCK(i_FT_SCK),	// SPI Clock from FT2232
         .i_FT_MOSI(i_FT_MOSI),	// Master Out, Slave In (FT2232 to FPGA)
-    	.o_FT_MISO(i_FT_MOSI),
+    	.o_FT_MISO(i_FT_MISO),
 
         .i_SPI_MISO(i_SPI_MISO),
-        .o_SPI_CLK(o_SPI_CLK),
-        .o_SPI_MOSI(o_SPI_MOSI),
-        .o_SPI_CS(o_SPI_CS),
+        .o_SPI_CLK(spi_clk_writer),
+        .o_SPI_MOSI(spi_mosi_writer),
+        .o_SPI_CS(spi_cs_writer),
 
         .o_HALT(o_HALT),
         .o_RESET(o_RESET)
-    )
+    );
     // Data Bus Handling
     assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
+    // Multiplexer to choose the active SPI clock driver
+    assign o_SPI_CLK = i_FT_CS ? spi_clk_ctrl : spi_clk_writer;
+    assign o_SPI_MOSI = i_FT_CS ? spi_mosi_ctrl : spi_mosi_writer;
+    assign o_SPI_CS = i_FT_CS ? spi_cs_ctrl : spi_cs_writer;
 
     // Add additional submodules as needed
 endmodule
