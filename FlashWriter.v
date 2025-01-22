@@ -18,29 +18,24 @@ wire i_FT_FLASH_WRITE = !i_FT_CS; // FT2232 CS (active low) triggers flash progr
 // Combinational logic to handle control signals
 always @(*) begin
     if (i_FT_FLASH_WRITE) begin
-        o_HALT = 1'b1;  // Halt the 6809
-        o_RESET = 1'b1; // Optionally reset the 6809 to ensure idle state
-    end else begin
-        o_HALT = 1'b0;  // Resume 6809 operation
-        o_RESET = 1'b0;
-    end
-end
-
-always @(posedge i_FT_SCK or posedge i_FT_CS) begin
-    if (i_FT_CS) begin
-        // When FT2232 is not active, release control of SPI signals
-        o_SPI_CLK <= 1'bz;  // Tri-state to allow 6809 control
-        o_SPI_MOSI <= 1'bz; // Tri-state to allow 6809 control
-        o_SPI_CS <= 1'bz;   // Tri-state to allow 6809 control
-        o_FT_MISO <= 1'bz;  // Tri-state MISO when FT2232 is not active
-    end else if (i_FT_FLASH_WRITE) begin
+        o_HALT <= 1'b1;  // Halt the 6809
+        o_RESET <= 1'b1; // Optionally reset the 6809 to ensure idle state
         // When FT2232 is active, control SPI signals
         o_SPI_CLK <= i_FT_SCK;   // Pass SPI clock through
         o_SPI_MOSI <= i_FT_MOSI; // Pass MOSI data through
         o_SPI_CS <= i_FT_CS;     // Pass CS state through
         o_FT_MISO <= i_SPI_MISO; // Pass MISO data back to FT2232
+    end else begin
+        o_HALT <= 1'b0;  // Resume 6809 operation
+        o_RESET <= 1'b0;
+        o_SPI_CLK <= 1'bz;  // Tri-state to allow 6809 control
+        o_SPI_MOSI <= 1'bz; // Tri-state to allow 6809 control
+        o_SPI_CS <= 1'bz;   // Tri-state to allow 6809 control
+        o_FT_MISO <= 1'bz;  // Tri-state MISO when FT2232 is not active
     end
 end
+
+
 
 
 endmodule

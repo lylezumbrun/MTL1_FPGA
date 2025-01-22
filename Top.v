@@ -31,7 +31,7 @@ module top (
     output	 o_UART_RX, 
     input	 i_UART_TX,
     output	 o_UART_RTS,
-    output	 i_UART_CTS,
+    input	 i_UART_CTS,
     // FLASH SPI Interface for 6809 ROM
     output	 o_SPI_CLK,
     output	 o_SPI_MOSI,
@@ -53,10 +53,10 @@ module top (
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
 	wire spi_data;
-    
+
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("133.0") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
+        .NOM_FREQ("53.2") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low)
         .OSC(clk_internal), // Oscillator output
