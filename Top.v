@@ -26,7 +26,7 @@ module top (
     input	 i_FT_SCK,	// SPI Clock from FT2232
     input	 i_FT_MOSI,	// Master Out, Slave In (FT2232 to FPGA)
     output	 o_FT_MISO,	// Master In, Slave Out (FPGA to FT2232)
-    input	 i_FT_CS,	// Chip Select from FT2232
+    input	 i_FT_CS,	// Chip Select from FT2232 to indicate that flash programming is in operation.
     // FT2232 UART Interface for 6809 to read and write to a terminal
     output	 o_UART_RX, 
     input	 i_UART_TX,
@@ -42,6 +42,8 @@ module top (
 );
 
 	wire clk_internal;
+    wire sram_ce;
+    wire spi_ce;
 	
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -54,32 +56,54 @@ module top (
 
     // Instantiate the address decoder
     address_decoder addr_dec (
+        .i_FT_CS(i_FT_CS),
         .address(i_ADDRESS_BUS),
         .sram_ce(sram_ce),
-        .spi_cs(spi_cs)
+        .spi_cs(spi_ce)
     );
 
     // SRAM Controller (activated by sram_ce)
     sram_controller sram_ctrl (
-        .address(i_ADDRESS_BUS),
+        .sram_ce(sram_ce),
         .rw(i_RW),
         .enable(i_E),
-        .q(i_Q),
         .we(o_WE),
         .re(o_RE),
         .ce(o_CE),
         .ce2(o_CE2)
     );
 
-    // SPI Master for Flash (activated by spi_cs)
-    spi_master flash_spi (
-        .clk(clk_internal),
-        .mosi(o_SPI_MOSI),
-        .miso(i_SPI_MISO),
-        .sck(o_SPI_CLK),
-        .cs(o_SPI_CS)
+    // SPI Master for Flash (activated by spi_ce)
+    // SPI Flash Controller
+    spi_flash_controller spi_ctrl (
+        .spi_ce(spi_ce),
+        .i_ADDRESS_BUS(i_ADDRESS_BUS),
+        .i_RW(i_RW),
+        .clk(clk),
+        .i_SPI_MISO(i_SPI_MISO),
+        .o_SPI_CLK(o_SPI_CLK),
+        .o_SPI_MOSI(o_SPI_MOSI),
+        .o_SPI_CS(o_SPI_CS),
+        .o_DATA(spi_data)
     );
 
+    spi_flash_writer spi_writer (
+        .clk_internal(clk_internal),
+        .i_FT_CS(i_FT_CS),
+        .i_FT_SCK(i_FT_SCK),	// SPI Clock from FT2232
+        .i_FT_MOSI(i_FT_MOSI),	// Master Out, Slave In (FT2232 to FPGA)
+    	.o_FT_MISO(i_FT_MOSI),
+
+        .i_SPI_MISO(i_SPI_MISO),
+        .o_SPI_CLK(o_SPI_CLK),
+        .o_SPI_MOSI(o_SPI_MOSI),
+        .o_SPI_CS(o_SPI_CS),
+
+        .o_HALT(o_HALT),
+        .o_RESET(o_RESET)
+    )
+    // Data Bus Handling
+    assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
 
     // Add additional submodules as needed
 endmodule

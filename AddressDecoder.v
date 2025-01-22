@@ -1,7 +1,8 @@
 module address_decoder (
+    input i_FT_CS,
     input [15:0] address,     // 16-bit address bus from 6809
     output reg sram_ce,       // SRAM chip enable
-    output reg spi_cs         // SPI flash chip select
+    output reg spi_ce         // SPI flash chip select
 );
 
     // Define address ranges for SRAM and SPI Flash
@@ -15,16 +16,16 @@ module address_decoder (
     always @(*) begin
         // Default values
         sram_ce = 1'b0;  // Deactivate SRAM by default
-        spi_cs = 1'b1;   // Deactivate SPI Flash by default
+        spi_ce = 1'b1;   // Deactivate SPI Flash by default
 
         // Check if address is in SRAM range
         if (address >= SRAM_START && address <= SRAM_END) begin
             sram_ce = 1'b1;   // Activate SRAM chip enable
         end
 
-        // Check if address is in SPI Flash range
-        if (address >= FLASH_START && address <= FLASH_END) begin
-            spi_cs = 1'b0;    // Activate SPI Flash chip select
+        // Check if address is in SPI Flash range and that FT2232 is not active low on the chip select, if active low then its controling the flash chip.
+        if (address >= FLASH_START && address <= FLASH_END && i_FT_CS) begin
+            spi_ce = 1'b0;    // Activate SPI Flash chip select
         end
     end
 
