@@ -1,18 +1,35 @@
+/*
+CIE Microprocessor Trainer Lab Memory Adapter
+Verilog Code for LCMXO2-1200HC-4TG100C FPGA
+Copyright Lyle Zumbrun 2025
+
+MTL-1 Predefined Memory Range
+-----------------------------------
+SRAM range: 0x0000 to 0x0FFF (4KB)
+ROM (SPI flash) 0xF000 to 0xFFFF
+
+Optional Address area for additional I/O or memory
+-----------------------------------------------
+0x1000 - 0x7FFF Memory Expansion Area
+0xA000 - 0xBFFF I/O Expansion Area
+*/
+
+
 module top (
     // MTL1 6809 interface
     inout [7:0]	 DATA_BUS,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
     input	 i_E,		// Enable signal from 6809
-    input	 i_Q,		// Phase signal from 6809
-    input	 i_BA,		// used to indicate that the buses (address and data) and the read/write output are in the high-impedance state
-    input	 i_BS,		// indicates whether the CPU is currently actively using the system bus
+ //   input	 i_Q,		// Phase signal from 6809
+ //   input	 i_BA,		// used to indicate that the buses (address and data) and the read/write output are in the high-impedance state
+ //   input	 i_BS,		// indicates whether the CPU is currently actively using the system bus
     output	 o_WE,		// SRAM Write Enable
     output	 o_RE,		//SRAM Read Enable
     output	 o_CE,		// SRAM Chip enable active low
     output	 o_CE2,		// SRAM Chip Enable active high
     output	 o_HALT,	// Assert HALT signal to 6809
-    output	 o_RESET,	// Assert RESET signal to 6809
+    inout	 o_RESET,	// Assert RESET signal to 6809
     output	 o_FIRQ,	// Assert a fast interrupt to 6809
     output	 o_IRQ,		// Assert a interrupt to 6809
     output	 o_CONTROL2_OE,	// Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
@@ -30,20 +47,22 @@ module top (
     // FT2232 UART Interface for 6809 to read and write to a terminal
     output	 o_UART_RX, 
     input	 i_UART_TX,
-    output	 o_UART_RTS,
-    input	 i_UART_CTS,
+//  output o_UART_RTS,
+//  input	 i_UART_CTS,
+    
     // FLASH SPI Interface for 6809 ROM
     output	 o_SPI_CLK,
     output	 o_SPI_MOSI,
     output	 o_SPI_CS,
     input	 i_SPI_MISO
-
-
 );
 
 	wire clk_internal;
     wire sram_ce;
     wire spi_ce;
+    wire uart_data_ce;
+    wire uart_status_ce;
+    wire uart_control_ce;
 
     wire spi_clk_writer;
     wire spi_mosi_writer;
@@ -52,13 +71,14 @@ module top (
     wire spi_clk_ctrl;
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
-	wire spi_data;
+	wire [7:0] spi_data;
+    wire [7:0] uart_data;
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("53.2") // Nominal frequency: "3.3", "12.0", or "133.0" MHz
+        .NOM_FREQ("44.33") // Max speed rating of SPI Flash with read instruction is 50MHz, 44.33 is highest we can use on FPGA without a clock divider. 
     ) internal_oscillator (
-        .STDBY(1'b0),  // Standby control (active-low)
+        .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
         .SEDSTDBY()         // Status (unused here)
     );
@@ -68,7 +88,10 @@ module top (
         .i_FT_CS(i_FT_CS),
         .address(i_ADDRESS_BUS),
         .sram_ce(sram_ce),
-        .spi_ce(spi_ce)
+        .spi_ce(spi_ce),
+        .uart_data_ce(uart_data_ce),
+        .uart_status_ce(uart_status_ce),
+        .uart_control_ce(uart_control_ce)
     );
 
     // SRAM Controller (activated by sram_ce)
@@ -100,7 +123,7 @@ module top (
         .i_FT_CS(i_FT_CS),
         .i_FT_SCK(i_FT_SCK),	// SPI Clock from FT2232
         .i_FT_MOSI(i_FT_MOSI),	// Master Out, Slave In (FT2232 to FPGA)
-    	.o_FT_MISO(i_FT_MISO),
+    	.o_FT_MISO(o_FT_MISO),
 
         .i_SPI_MISO(i_SPI_MISO),
         .o_SPI_CLK(spi_clk_writer),
@@ -110,6 +133,39 @@ module top (
         .o_HALT(o_HALT),
         .o_RESET(o_RESET)
     );
+
+    uart_interface uart(
+        .uart_data_ce(uart_data_ce),
+        .uart_status_ce(uart_status_ce),
+        .uart_control_ce(uart_control_ce),
+        .i_RW(i_RW),
+        .i_DATA_BUS(DATA_BUS),
+        .clk(clk_internal),
+        .reset(Reset),
+        .i_UART_TX(i_UART_TX),
+        .o_UART_RX(o_UART_RX),
+        .o_DATA(uart_data),
+        .o_IRQ(o_IRQ)
+    );
+
+
+
+
+
+
+    // Enable Bidirectional Voltage-Level Translators
+    assign o_CONTROL2_OE = 1'b1; 
+    assign o_CONTROL1_OE = 1'b1;
+    assign o_ABUS_OE = 1'b1;
+    assign o_DBUS_OE = 1'b1;
+
+    // Set to high impedance or disconnected state
+    assign o_DBEN = 1'bz;
+    assign o_DMA = 1'bz;
+    assign o_MRDY = 1'bz;
+    assign o_FIRQ = 1'bz;
+
+
     // Data Bus Handling
     assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
     // Multiplexer to choose the active SPI clock driver

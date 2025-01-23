@@ -10,7 +10,7 @@ module spi_flash_controller (
     output reg [7:0] o_DATA     // Data output to 6809
 );
 
-    reg [7:0] spi_command = 8'h03; // Command for SPI flash (READ command is 0x03)
+    wire [7:0] spi_command = 8'h03; // Command for SPI flash (READ command is 0x03)
     reg [23:0] spi_address = 24'b0; // Address for SPI flash
     reg [7:0] spi_data = 8'b0;      // Data read from SPI flash
     reg [5:0] bit_counter = 6'b0;   // Tracks SPI transaction progress (6 bits to cover up to 40)
@@ -31,18 +31,18 @@ module spi_flash_controller (
 
             if (o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
-                if (bit_counter < 8) begin
+                if (bit_counter < 6'd8) begin
                     // Send SPI command (8 bits)
                     o_SPI_MOSI <= spi_command[7 - bit_counter];
-                end else if (bit_counter < 32) begin
+                end else if (bit_counter < 6'd32) begin
                     // Send SPI address (24 bits)
                     o_SPI_MOSI <= spi_address[31 - bit_counter];
-                end else if (bit_counter < 40) begin
+                end else if (bit_counter < 6'd40) begin
                     // Receive SPI data (8 bits)
-                    spi_data[7 - (bit_counter - 32)] <= i_SPI_MISO;
+                    spi_data[7 - (bit_counter - 6'd32)] <= i_SPI_MISO;
                 end
 
-                // Increment bit counter
+                // Increment bit counter (always within 6-bit range, safe to truncate)
                 bit_counter <= bit_counter + 1;
 
                 if (bit_counter == 6'd40) begin
