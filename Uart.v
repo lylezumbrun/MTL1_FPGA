@@ -1,14 +1,13 @@
 module uart_interface (
-    input uart_data_ce,         // Chip enable for UART data register
-    input uart_status_ce,       // Chip enable for UART status register
-    input uart_control_ce,      // Chip enable for UART control register
-    input i_RW,                 // Read/Write signal (1 = read, 0 = write)
-    input [7:0] i_DATA_BUS,     // Data bus for 6809
     input clk,                  // System clock (44.33 MHz)
     input reset,                // System reset
     input i_UART_TX,            // FT2232 TX line (serial data from host)
+    input [7:0] i_control, // Control register 
+    input [7:0] i_uart_rxdata,
+
     output reg o_UART_RX = 1'b1, // FT2232 RX line (serial data to host)
-    output reg [7:0] o_DATA = 8'b0, // Data output to 6809
+    output reg [7:0] o_uart_txdata, // Data output to 6809
+    output reg [7:0] o_uart_status, // Uart Status Register
     output reg o_IRQ = 1'b1      // Active-low interrupt signal to 6809
 );
 
@@ -24,6 +23,7 @@ module uart_interface (
     reg rx_state = IDLE;        // UART RX state
     reg rx_start = 1'b0;        // RX start bit detected
     reg data_ready = 1'b0;      // Data ready flag
+   
     reg irq_flag = 1'b1;        // Internal interrupt flag (active-low)
 
     // Baud Rate Generator
@@ -65,7 +65,7 @@ module uart_interface (
                         bit_counter <= bit_counter + 1;
                         if (bit_counter == 7) begin // All 8 data bits received
                             rx_state <= IDLE;
-                            data_ready <= 1'b1;  // Mark data ready
+                            o_uart_status <= {7'b0, data_ready}; // Status: Bit 0 = data ready / Mark data ready
                             irq_flag <= 1'b0;    // Set interrupt flag (active-low)
                         end
                     end
@@ -74,26 +74,6 @@ module uart_interface (
         end
     end
 
-    // 6809 Interface Logic
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            o_DATA <= 8'b0;
-            irq_flag <= 1'b1; // Interrupt inactive
-        end else begin
-            if (uart_data_ce && i_RW) begin
-                // Read UART Data Register
-                o_DATA <= uart_rx_data;
-                data_ready <= 1'b0;  // Clear data ready flag after read
-                irq_flag <= 1'b1;    // Deassert interrupt flag (inactive high)
-            end else if (uart_status_ce && i_RW) begin
-                // Read UART Status Register
-                o_DATA <= {7'b0, data_ready}; // Status: Bit 0 = data ready
-            end else if (uart_data_ce && !i_RW) begin
-                // Write to UART Data Register (transmit)
-                o_UART_RX <= i_DATA_BUS[0]; // Only sending the first bit for now
-            end
-        end
-    end
 
     // Assign the IRQ output
     always @(posedge clk or posedge reset) begin

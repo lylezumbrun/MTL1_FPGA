@@ -72,7 +72,10 @@ module top (
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
 	wire [7:0] spi_data;
-    wire [7:0] uart_data;
+    wire [7:0] uart_txdata;
+    wire [7:0] uart_rxdata;
+    wire [7:0] uart_status;
+    wire [7:0] uart_control;
 
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -135,16 +138,14 @@ module top (
     );
 
     uart_interface uart(
-        .uart_data_ce(uart_data_ce),
-        .uart_status_ce(uart_status_ce),
-        .uart_control_ce(uart_control_ce),
-        .i_RW(i_RW),
-        .i_DATA_BUS(DATA_BUS),
         .clk(clk_internal),
         .reset(Reset),
         .i_UART_TX(i_UART_TX),
+        .i_control(uart_control),
+        .i_uart_rxdata(uart_rxdata),
         .o_UART_RX(o_UART_RX),
-        .o_DATA(uart_data),
+        .o_uart_txdata(uart_txdata),
+        .o_uart_status(uart_status),
         .o_IRQ(o_IRQ)
     );
 
@@ -167,7 +168,14 @@ module top (
 
 
     // Data Bus Handling
-    assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
+assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
+assign DATA_BUS = (uart_data_ce && i_RW) ? uart_txdata : 8'bz;
+assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
+assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
+assign uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
+
+
+  
     // Multiplexer to choose the active SPI clock driver
     assign o_SPI_CLK = i_FT_CS ? spi_clk_ctrl : spi_clk_writer;
     assign o_SPI_MOSI = i_FT_CS ? spi_mosi_ctrl : spi_mosi_writer;
