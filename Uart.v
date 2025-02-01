@@ -26,11 +26,11 @@ module uart_interface (
     reg rx_state = RXIDLE;      // UART RX state
     reg tx_state = TXIDLE;      // UART TX state
     reg rx_start = 1'b0;        // RX start bit detected
-    reg data_ready = 1'b0;      // Data ready flag
     reg irq_flag = 1'b1;        // Internal interrupt flag (active-low)
-    reg	control_tx = 8'b0;
+    reg	control_uart = 8'b0;    // bit 0 = Data Ready to Tranmsit, bit 1 =  Enable interrupt
+
    
-   
+       
     // Baud Rate Generator
     always @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -47,50 +47,52 @@ module uart_interface (
     end
 
     // UART RX Process
-    always @(posedge baud_clk or posedge reset) begin
-        if (reset) begin
-            rx_state <= RXIDLE;
-            rx_bit_counter <= 0;
-            uart_rx_data <= 8'b0;
-            rx_start <= 1'b0;
-            data_ready <= 1'b0;
-            irq_flag <= 1'b1; // Interrupt inactive
-        end else begin
-            case (rx_state)
-                RXIDLE: begin
-                    if (!i_UART_TX) begin // Start bit detected (low)
-                        rx_state <= RECEIVE;
-                        rx_start <= 1'b1;
-                        rx_bit_counter <= 0;
+   always @(posedge baud_clk or posedge reset) begin
+      if (reset) begin
+         rx_state <= RXIDLE;
+         rx_bit_counter <= 0;
+         uart_rx_data <= 8'b0;
+         rx_start <= 1'b0;
+         o_uart_status[0] <= 1'b0;
+         irq_flag <= 1'b1;  // Interrupt inactive by default
+      end else begin
+         case (rx_state)
+           RXIDLE: begin
+              if (!i_UART_TX) begin // Start bit detected (low)
+                 rx_state <= RECEIVE;
+                 rx_start <= 1'b1;
+                 rx_bit_counter <= 0;
+              end
+           end
+           RECEIVE: begin
+              if (rx_start) begin
+                 uart_rx_data[rx_bit_counter] <= i_UART_TX;
+                 rx_bit_counter <= rx_bit_counter + 1;
+                 if (rx_bit_counter == 7) begin
+                    rx_state <= RXIDLE;
+                    o_uart_status[0] <= 1'b1;  // Set RX data ready flag
+                    if (control_uart[1]) begin
+                       irq_flag <= 1'b0;  // Assert interrupt (active-low)
                     end
-                end
-                RECEIVE: begin
-		   if (rx_start) begin
-		      uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // Shift in RX data
-		      rx_bit_counter <= rx_bit_counter + 1;
-		      if (rx_bit_counter == 7) begin
-			 rx_state <= RXIDLE;
-			 if (i_UART_TX == 1'b1) begin // Stop bit check
-			    data_ready <= 1'b1;
-			    irq_flag <= 1'b0;
-			 end
-		      end
-		   end      
-           endcase
-        end
-    end
-
-    // UART TX Process
+                 end
+              end
+           end
+         endcase
+      end
+   end  
+  // UART TX Process
     always @(posedge baud_clk or posedge reset) begin
         if (reset) begin
             tx_state <= TXIDLE;
             tx_bit_counter <= 0;
             o_UART_RX <= 1'b1; // Idle state (high)
+	    o_uart_status[1] <= 1'b0; // clear the transmit busy flag
         end else begin
 	   case (tx_state)
 	     TXIDLE: begin
-		if (control_tx == 8'h01) begin
+		if (control_uart[0]) begin
 		   tx_state <= TRANSMIT;
+		   o_uart_status[1] <= 1'b1; // Set the transmit busy flag
 		   tx_bit_counter <= 0;
 		   uart_tx_data <= {1'b1, i_uart_rxdata, 1'b0}; // Append stop and start bit
 		end
@@ -99,7 +101,8 @@ module uart_interface (
 		o_UART_RX <= uart_tx_data[tx_bit_counter];
 		tx_bit_counter <= tx_bit_counter + 1;
 		if (tx_bit_counter == 9) begin
-		   control_tx <= 8'h00;
+		   control_uart[0] <= 1'b0;  // clear the transmit start control flag
+		   o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
 		   tx_state <= TXIDLE;
 		   o_UART_RX <= 1'b1; // Idle line
 		end
