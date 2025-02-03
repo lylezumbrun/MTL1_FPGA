@@ -1,15 +1,15 @@
-module uart_interface (
-    input clk,                  // System clock (44.33 MHz)
-    input reset,                // System reset
-    input i_UART_TX,            // FT2232 TX line (serial data from host)
-    input [7:0] i_control,      // Control register
-    input [7:0] i_uart_rxdata,  // Data input from 6809
+    module uart_interface (
+		       input clk,                  // System clock (44.33 MHz)
+		       input reset,                // System reset
+		       input i_UART_TX,            // FT2232 TX line (serial data from host)
+		       input [7:0] i_control,      // Control register
+		       input [7:0] i_uart_rxdata,  // Data input from 6809
 
-    output reg o_UART_RX = 1'b1, // FT2232 RX line (serial data to host)
-    output reg [7:0] o_uart_txdata, // Data output to 6809
-    output reg [7:0] o_uart_status, // UART Status Register
-    output reg o_IRQ = 1'b1      // Active-low interrupt signal to 6809
-);
+		       output reg o_UART_RX = 1'b1, // FT2232 RX line (serial data to host)
+		       output reg [7:0] o_uart_txdata, // Data output to 6809
+		       output reg [7:0] o_uart_status, // UART Status Register
+		       output reg o_IRQ = 1'b1      // Active-low interrupt signal to 6809
+		       );
 
     // Parameters
     parameter CLOCK_DIVISOR = 4618; // Divisor for 9600 bps with 44.33 MHz clock
@@ -25,10 +25,11 @@ module uart_interface (
     reg [7:0] uart_tx_data = 8'b0; // Data to transmit
     reg rx_state = RXIDLE;      // UART RX state
     reg tx_state = TXIDLE;      // UART TX state
-    reg rx_start = 1'b0;        // RX start bit detected
     reg irq_flag = 1'b1;        // Internal interrupt flag (active-low)
     reg	control_uart = 8'b0;    // bit 0 = Data Ready to Tranmsit, bit 1 =  Enable interrupt
+    reg [9:0] uart_tx_data = 10'b0;
 
+   
    
        
     // Baud Rate Generator
@@ -52,7 +53,6 @@ module uart_interface (
          rx_state <= RXIDLE;
          rx_bit_counter <= 0;
          uart_rx_data <= 8'b0;
-         rx_start <= 1'b0;
          o_uart_status[0] <= 1'b0;
          irq_flag <= 1'b1;  // Interrupt inactive by default
       end else begin
@@ -60,13 +60,11 @@ module uart_interface (
            RXIDLE: begin
               if (!i_UART_TX) begin // Start bit detected (low)
                  rx_state <= RECEIVE;
-                 rx_start <= 1'b1;
                  rx_bit_counter <= 0;
               end
            end
            RECEIVE: begin
-              if (rx_start) begin
-                 uart_rx_data[rx_bit_counter] <= i_UART_TX;
+                 uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits.
                  rx_bit_counter <= rx_bit_counter + 1;
                  if (rx_bit_counter == 7) begin
                     rx_state <= RXIDLE;
@@ -75,7 +73,6 @@ module uart_interface (
                        irq_flag <= 1'b0;  // Assert interrupt (active-low)
                     end
                  end
-              end
            end
          endcase
       end
