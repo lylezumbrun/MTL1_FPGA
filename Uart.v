@@ -1,13 +1,17 @@
     module uart_interface (
+               input i_RW,
+               input i_uart_data_ce,
+               input i_uart_control_ce, 
 		       input clk,                  // System clock (44.33 MHz)
 		       input reset,                // System reset
 		       input i_UART_TX,            // FT2232 TX line (serial data from host)
-		       input [7:0] i_control,      // Control register
+		       input [7:0] i_control,      // Input to Control register
 		       input [7:0] i_uart_rxdata,  // Data input from 6809
 
 		       output reg o_UART_RX = 1'b1, // FT2232 RX line (serial data to host)
 		       output reg [7:0] o_uart_txdata, // Data output to 6809
 		       output reg [7:0] o_uart_status, // UART Status Register
+               output reg [7:0] o_control, // output the control register
 		       output reg o_IRQ = 1'b1      // Active-low interrupt signal to 6809
 		       );
 
@@ -22,12 +26,12 @@
     reg [3:0] rx_bit_counter = 0;  // Bit counter for RX
     reg [3:0] tx_bit_counter = 0;  // Bit counter for TX
     reg [7:0] uart_rx_data = 8'b0; // Data received from FT2232
-    reg [7:0] uart_tx_data = 8'b0; // Data to transmit
     reg rx_state = RXIDLE;      // UART RX state
     reg tx_state = TXIDLE;      // UART TX state
     reg irq_flag = 1'b1;        // Internal interrupt flag (active-low)
-    reg	control_uart = 8'b0;    // bit 0 = Data Ready to Tranmsit, bit 1 =  Enable interrupt
+    reg	[7:0] control_uart = 8'b0;    // bit 0 = Data Ready to Tranmsit, bit 1 =  Enable interrupt
     reg [9:0] uart_tx_data = 10'b0;
+    reg [7:0] uart_data_out = 8'b0;
 
    
    
@@ -50,21 +54,21 @@
     // UART RX Process
    always @(posedge baud_clk or posedge reset) begin
       if (reset) begin
-         rx_state <= RXIDLE;
-         rx_bit_counter <= 0;
-         uart_rx_data <= 8'b0;
-         o_uart_status[0] <= 1'b0;
-         irq_flag <= 1'b1;  // Interrupt inactive by default
+         rx_state <= RXIDLE; // default to IDLE state
+         rx_bit_counter <= 0; // set counter to zero
+         uart_rx_data <= 8'b0; // zero register
+         o_uart_status[0] <= 1'b0; // clear rx data ready flag
+         irq_flag <= 1'b1;  // Interrupt inactive on reset
       end else begin
          case (rx_state)
            RXIDLE: begin
               if (!i_UART_TX) begin // Start bit detected (low)
-                 rx_state <= RECEIVE;
-                 rx_bit_counter <= 0;
+                 rx_state <= RECEIVE; // change to state to receive
+                 rx_bit_counter <= 0; // set counter to zero
               end
            end
            RECEIVE: begin
-                 uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits.
+                 uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits. LSB is dropped with each cycle
                  rx_bit_counter <= rx_bit_counter + 1;
                  if (rx_bit_counter == 7) begin
                     rx_state <= RXIDLE;
@@ -95,14 +99,14 @@
 		end
 	     end
 	     TRANSMIT: begin
-		o_UART_RX <= uart_tx_data[tx_bit_counter];
-		tx_bit_counter <= tx_bit_counter + 1;
-		if (tx_bit_counter == 9) begin
-		   control_uart[0] <= 1'b0;  // clear the transmit start control flag
-		   o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
-		   tx_state <= TXIDLE;
-		   o_UART_RX <= 1'b1; // Idle line
-		end
+            o_UART_RX <= uart_tx_data[tx_bit_counter];
+            tx_bit_counter <= tx_bit_counter + 1;
+            if (tx_bit_counter == 9) begin
+            control_uart[0] <= 1'b0;  // clear the transmit start control flag
+            o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
+            tx_state <= TXIDLE;
+            o_UART_RX <= 1'b1; // Idle line
+            end
 	     end
 	   endcase
         end
@@ -113,10 +117,18 @@
         if (reset) begin
             o_IRQ <= 1'b1; // Interrupt inactive (default high)
         end else begin
-	   if (tx_state == TXIDLE)  begin
-		control_tx <= i_control;
-	     end
+            if(i_RW && i_uart_control_ce) begin
+                o_control <= control_uart;
+            end 
+            else if (!i_RW && uart_control_ce)
+                control_uart <= i_control;
+                uart_data_out <= i_uart_rxdata;
+            end
+            else
             o_IRQ <= irq_flag; // Follow the internal interrupt flag
         end
     end
+
+
+
 endmodule // uart_interface

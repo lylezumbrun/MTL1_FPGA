@@ -75,7 +75,8 @@ module top (
     wire [7:0] uart_txdata;
     wire [7:0] uart_rxdata;
     wire [7:0] uart_status;
-    wire [7:0] uart_control;
+    wire [7:0] input_uart_control;
+    wire [7:0] output_uart_control;
 
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -138,14 +139,18 @@ module top (
     );
 
     uart_interface uart(
+        .i_RW(i_RW),
+        .i_uart_data_ce(i_uart_data_ce),
+        .i_uart_control_ce(i_uart_control_ce),
         .clk(clk_internal),
         .reset(Reset),
         .i_UART_TX(i_UART_TX),
-        .i_control(uart_control),
+        .i_control(input_uart_control),
         .i_uart_rxdata(uart_rxdata),
         .o_UART_RX(o_UART_RX),
         .o_uart_txdata(uart_txdata),
         .o_uart_status(uart_status),
+        .o_control(output_uart_control),
         .o_IRQ(o_IRQ)
     );
 
@@ -172,7 +177,8 @@ assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
 assign DATA_BUS = (uart_data_ce && i_RW) ? uart_txdata : 8'bz;
 assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
-assign uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
+assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
+assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
 
 
   
