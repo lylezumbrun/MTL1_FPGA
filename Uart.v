@@ -29,6 +29,7 @@
     reg rx_state = RXIDLE;      // UART RX state
     reg tx_state = TXIDLE;      // UART TX state
     reg irq_flag = 1'b1;        // Internal interrupt flag (active-low)
+    reg transmit_flag = 1'b0;
     reg	[7:0] control_uart = 8'b0;    // bit 0 = Data Ready to Tranmsit, bit 1 =  Enable interrupt
     reg [9:0] uart_tx_data = 10'b0;
     reg [7:0] uart_data_out = 8'b0;
@@ -91,21 +92,21 @@
         end else begin
 	   case (tx_state)
 	     TXIDLE: begin
-		if (control_uart[0]) begin
-		   tx_state <= TRANSMIT;
-		   o_uart_status[1] <= 1'b1; // Set the transmit busy flag
-		   tx_bit_counter <= 0;
-		   uart_tx_data <= {1'b1, i_uart_rxdata, 1'b0}; // Append stop and start bit
-		end
+            if (transmit_flag) begin
+            tx_state <= TRANSMIT;
+            o_uart_status[1] <= 1'b1; // Set the transmit busy flag
+            tx_bit_counter <= 0;
+            uart_tx_data <= {1'b1, uart_data_out, 1'b0}; // Append stop and start bit
+            end
 	     end
 	     TRANSMIT: begin
             o_UART_RX <= uart_tx_data[tx_bit_counter];
             tx_bit_counter <= tx_bit_counter + 1;
             if (tx_bit_counter == 9) begin
-            control_uart[0] <= 1'b0;  // clear the transmit start control flag
-            o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
-            tx_state <= TXIDLE;
-            o_UART_RX <= 1'b1; // Idle line
+                transmit_flag <= 1'b0;  // clear the transmit start control flag
+                o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
+                tx_state <= TXIDLE;
+                o_UART_RX <= 1'b1; // Idle line
             end
 	     end
 	   endcase
@@ -116,17 +117,24 @@
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             o_IRQ <= 1'b1; // Interrupt inactive (default high)
-        end else begin
+        end 
+        else begin
             if(i_RW && i_uart_control_ce) begin
                 o_control <= control_uart;
             end 
-            else if (!i_RW && uart_control_ce)
+            if (!i_RW && i_uart_control_ce)
                 control_uart <= i_control;
-                uart_data_out <= i_uart_rxdata;
+                
             end
-            else
+            if (!i_RW && i_uart_data_ce && !tx_state) begin
+                uart_data_out <= i_uart_rxdata;
+                transmit_flag <= 1'b1;
+            end
+
+
+
             o_IRQ <= irq_flag; // Follow the internal interrupt flag
-        end
+
     end
 
 
