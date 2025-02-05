@@ -29,7 +29,7 @@ module top (
     output	 o_CE,		// SRAM Chip enable active low
     output	 o_CE2,		// SRAM Chip Enable active high
     output	 o_HALT,	// Assert HALT signal to 6809
-    inout	 o_RESET,	// Assert RESET signal to 6809
+    inout	 io_RESET,	// Assert RESET signal to 6809
     output	 o_FIRQ,	// Assert a fast interrupt to 6809
     output	 o_IRQ,		// Assert a interrupt to 6809
     output	 o_CONTROL2_OE,	// Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
@@ -67,7 +67,7 @@ module top (
     wire spi_clk_writer;
     wire spi_mosi_writer;
     wire spi_cs_writer;
-
+    wire reset;
     wire spi_clk_ctrl;
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
@@ -135,15 +135,15 @@ module top (
         .o_SPI_CS(spi_cs_writer),
 
         .o_HALT(o_HALT),
-        .o_RESET(o_RESET)
+        .o_RESET(reset)
     );
 
     uart_interface uart(
         .i_RW(i_RW),
-        .i_uart_data_ce(i_uart_data_ce),
-        .i_uart_control_ce(i_uart_control_ce),
+        .i_uart_data_ce(uart_data_ce),
+        .i_uart_control_ce(uart_control_ce),
         .clk(clk_internal),
-        .reset(Reset),
+        .reset(eset),
         .i_UART_TX(i_UART_TX),
         .i_control(input_uart_control),
         .i_uart_rxdata(uart_rxdata),
@@ -179,7 +179,7 @@ assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
 assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
-
+assign o_RESET = 1'bz;
 
   
     // Multiplexer to choose the active SPI clock driver
