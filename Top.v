@@ -143,7 +143,7 @@ module top (
         .i_uart_data_ce(uart_data_ce),
         .i_uart_control_ce(uart_control_ce),
         .clk(clk_internal),
-        .reset(eset),
+        .reset(io_RESET),
         .i_UART_TX(i_UART_TX),
         .i_control(input_uart_control),
         .i_uart_rxdata(uart_rxdata),
@@ -179,7 +179,7 @@ assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
 assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
-assign o_RESET = 1'bz;
+assign io_RESET = 1'bz;
 
   
     // Multiplexer to choose the active SPI clock driver

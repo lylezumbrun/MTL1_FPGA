@@ -70,7 +70,6 @@
            end
            RECEIVE: begin
                  uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits. LSB is dropped with each cycle
-                 rx_bit_counter <= rx_bit_counter + 1;
                  if (rx_bit_counter == 7) begin
                     rx_state <= RXIDLE;
                     if (control_uart[1]) begin
@@ -139,6 +138,10 @@
             if (rx_state == RECEIVE || i_RW && i_uart_data_ce) begin
                 o_uart_status[0] <= 1'b0;  // Set RX data ready flag
             end
+            if (i_RW && i_uart_data_ce) begin
+                o_uart_txdata <= uart_rx_data;  // Set RX data ready flag
+            end
+
             o_IRQ <= irq_flag; // Follow the internal interrupt flag
 
     end
