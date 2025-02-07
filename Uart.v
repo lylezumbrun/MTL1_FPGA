@@ -16,7 +16,7 @@
     );
 
     // Parameters
-    parameter CLOCK_DIVISOR = 4618; // Divisor for 9600 bps with 44.33 MHz clock
+    parameter CLOCK_DIVISOR = 9236; // Divisor for 9600 bps with 88.67 MHz clock
     localparam RXIDLE = 1'b0, RECEIVE = 1'b1; // UART RX states
     localparam TXIDLE = 1'b0, TRANSMIT = 1'b1; // UART TX states
 

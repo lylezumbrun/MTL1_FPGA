@@ -28,7 +28,7 @@ module top (
     output	 o_RE,		//SRAM Read Enable
     output	 o_CE,		// SRAM Chip enable active low
     output	 o_CE2,		// SRAM Chip Enable active high
-    output	 o_HALT,	// Assert HALT signal to 6809
+    output	 o_HALT,	// Assert HALT active low signal to 6809
     inout	 io_RESET,	// Assert RESET signal to 6809
     output	 o_FIRQ,	// Assert a fast interrupt to 6809
     output	 o_IRQ,		// Assert a interrupt to 6809
@@ -180,7 +180,7 @@ assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
 assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
-assign io_RESET = 1'bz;
+assign io_RESET = (~i_FT_CS) ? reset : 1'bz;
 assign o_MRDY = (spi_ce && i_RW) ? memory_ready : 1'bz; 
 
   

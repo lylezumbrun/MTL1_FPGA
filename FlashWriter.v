@@ -13,11 +13,9 @@ module spi_flash_writer (
     output reg o_RESET 
 );
 
-wire i_FT_FLASH_WRITE = !i_FT_CS; // FT2232 CS (active low) triggers flash programming mode
-
 // Combinational logic to handle control signals
 always @(*) begin
-    if (i_FT_FLASH_WRITE) begin
+    if (~i_FT_CS) begin
         o_HALT <= 1'b1;  // Halt the 6809
         o_RESET <= 1'b1; // Optionally reset the 6809 to ensure idle state
         // When FT2232 is active, control SPI signals
