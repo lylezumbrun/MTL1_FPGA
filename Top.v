@@ -71,6 +71,7 @@ module top (
     wire spi_clk_ctrl;
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
+    wire memory_ready;
 	wire [7:0] spi_data;
     wire [7:0] uart_txdata;
     wire [7:0] uart_rxdata;
@@ -80,7 +81,7 @@ module top (
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("44.33") // Max speed rating of SPI Flash with read instruction is 50MHz, 44.33 is highest we can use on FPGA without a clock divider. 
+        .NOM_FREQ("88.67") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
@@ -120,7 +121,8 @@ module top (
         .o_SPI_CLK(spi_clk_ctrl),
         .o_SPI_MOSI(spi_mosi_ctrl),
         .o_SPI_CS(spi_cs_ctrl),
-        .o_DATA(spi_data)
+        .o_DATA(spi_data),
+        .o_MemoryReady(memory_ready)
     );
 
     spi_flash_writer spi_writer (
@@ -168,7 +170,6 @@ module top (
     // Set to high impedance or disconnected state
     assign o_DBEN = 1'bz;
     assign o_DMA = 1'bz;
-    assign o_MRDY = 1'bz;
     assign o_FIRQ = 1'bz;
 
 
@@ -180,6 +181,7 @@ assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
 assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
 assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
 assign io_RESET = 1'bz;
+assign o_MRDY = (spi_ce && i_RW) ? memory_ready : 1'bz; 
 
   
     // Multiplexer to choose the active SPI clock driver

@@ -1,4 +1,4 @@
-`timescale 1us / 1us
+`timescale 1ns / 1ns
 module tb_spi_flash_controller;
 
     reg spi_ce;
@@ -10,6 +10,7 @@ module tb_spi_flash_controller;
     wire o_SPI_MOSI;
     wire o_SPI_CS;
     wire [7:0] o_DATA;
+    wire o_MemoryReady;
 
     // Instantiate the Unit Under Test (UUT)
     spi_flash_controller uut (
@@ -21,11 +22,12 @@ module tb_spi_flash_controller;
         .o_SPI_CLK(o_SPI_CLK),
         .o_SPI_MOSI(o_SPI_MOSI),
         .o_SPI_CS(o_SPI_CS),
-        .o_DATA(o_DATA)
+        .o_DATA(o_DATA),
+        .o_MemoryReady(o_MemoryReady)
     );
 
-    // Clock generation at 44.33 MHz
-    localparam CLOCK_PERIOD_NS = 22.57; // 44.33 MHz -> 1 / 44.33e6 seconds
+    // Clock generation at 88.67 MHz 
+    localparam CLOCK_PERIOD_NS = 11.285; // 88.67 MHz 
     initial clk = 0;
     always #(CLOCK_PERIOD_NS / 2) clk = ~clk;
 
@@ -35,8 +37,10 @@ module tb_spi_flash_controller;
             spi_ce = 1;
             i_RW = 1;
             i_ADDRESS_BUS = address;
-            #1000;  // Wait for SPI operation to begin
-
+            #882;  // Wait for SPI operation to begin
+            #24 i_SPI_MISO = 1;
+            #24 i_SPI_MISO = 0;
+            #24 i_SPI_MISO = 1;
             spi_ce = 0;
             i_RW = 0;
             #100;  // Return to idle state after operation
@@ -57,15 +61,8 @@ module tb_spi_flash_controller;
         #100;
 
         // Stimulate SPI flash read for address 0x1234
-        spi_flash_read(16'hffff);
+        spi_flash_read(16'hfffd);
 
-        // Simulate some dummy MISO responses
-        #50 i_SPI_MISO = 1;
-        #50 i_SPI_MISO = 0;
-        #50 i_SPI_MISO = 1;
-
-        // Complete simulation
-        #500;
         $display("Final SPI Data Received: %h", o_DATA);
         $finish;
     end

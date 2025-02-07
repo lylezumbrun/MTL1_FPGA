@@ -7,7 +7,8 @@ module spi_flash_controller (
     output reg o_SPI_CLK,   // SPI Clock
     output reg o_SPI_MOSI,  // SPI Master Out Slave In
     output reg o_SPI_CS,    // SPI Chip Select (active low)
-    output reg [7:0] o_DATA     // Data output to 6809
+    output reg [7:0] o_DATA,     // Data output to 6809
+    output reg o_MemoryReady
 );
 
     wire [7:0] spi_command = 8'h03; // Command for SPI flash (READ command is 0x03)
@@ -28,8 +29,9 @@ module spi_flash_controller (
         if (spi_active) begin
             // Toggle SPI clock
             o_SPI_CLK = ~o_SPI_CLK;
+            o_MemoryReady <= 1'b0; // Insert a wait state to the 6809 to allow time to access data.
 
-            if (o_SPI_CLK) begin
+            if (~o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
                 if (bit_counter < 6'd8) begin
                     // Send SPI command (8 bits)
@@ -55,8 +57,9 @@ module spi_flash_controller (
         end 
         else begin
             // Idle state: set SPI signals to default
-            o_SPI_MOSI <= 1'b0;
-            o_SPI_CLK <= 1'b0;
+            o_SPI_MOSI <= 1'b1; // High Impedance at idle
+            o_SPI_CLK <= 1'b1; // need to be high at idle for SPI Mode 3 (CPOL = 1, CPHA = 1)
+            o_MemoryReady <= 1'b1; // Release wait state allow the 6809 to continue
         end
     end
 endmodule
