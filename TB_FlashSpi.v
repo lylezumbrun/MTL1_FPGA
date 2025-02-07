@@ -35,7 +35,7 @@ module tb_spi_flash_controller;
             spi_ce = 1;
             i_RW = 1;
             i_ADDRESS_BUS = address;
-            #100;  // Wait for SPI operation to begin
+            #1000;  // Wait for SPI operation to begin
 
             spi_ce = 0;
             i_RW = 0;
@@ -57,7 +57,7 @@ module tb_spi_flash_controller;
         #100;
 
         // Stimulate SPI flash read for address 0x1234
-        spi_flash_read(16'h1234);
+        spi_flash_read(16'hffff);
 
         // Simulate some dummy MISO responses
         #50 i_SPI_MISO = 1;

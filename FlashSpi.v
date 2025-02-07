@@ -4,9 +4,9 @@ module spi_flash_controller (
     input i_RW,                 // Read/Write control signal (only reads for flash)
     input clk,                  // System clock
     input i_SPI_MISO,           // SPI Master In Slave Out
-    output reg o_SPI_CLK = 0,   // SPI Clock
-    output reg o_SPI_MOSI = 0,  // SPI Master Out Slave In
-    output reg o_SPI_CS = 1,    // SPI Chip Select (active low)
+    output reg o_SPI_CLK,   // SPI Clock
+    output reg o_SPI_MOSI,  // SPI Master Out Slave In
+    output reg o_SPI_CS,    // SPI Chip Select (active low)
     output reg [7:0] o_DATA     // Data output to 6809
 );
 
@@ -27,7 +27,7 @@ module spi_flash_controller (
 
         if (spi_active) begin
             // Toggle SPI clock
-            o_SPI_CLK <= ~o_SPI_CLK;
+            o_SPI_CLK = ~o_SPI_CLK;
 
             if (o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
@@ -52,7 +52,8 @@ module spi_flash_controller (
                     o_DATA <= spi_data; // Output received data
                 end
             end
-        end else begin
+        end 
+        else begin
             // Idle state: set SPI signals to default
             o_SPI_MOSI <= 1'b0;
             o_SPI_CLK <= 1'b0;
