@@ -15,6 +15,11 @@
     wire [7:0] o_control; // output the control register
     wire o_IRQ;      // Active-low interrupt signal to 6809
 
+    // Clock generation at 88.67 MHz 
+    localparam CLOCK_PERIOD_NS = 11.285; // 88.67 MHz 
+    initial clk = 0;
+    always #(CLOCK_PERIOD_NS / 2) clk = ~clk;
+
 
 uart_interface uut(
     .i_RW(i_RW),
@@ -33,23 +38,50 @@ uart_interface uut(
     .o_IRQ(o_IRQ)      // Active-low interrupt signal to 6809
 );
 
-    // Clock generation at 88.67 MHz 
-    localparam CLOCK_PERIOD_NS = 11.285; // 88.67 MHz 
-    initial clk = 0;
-    always #(CLOCK_PERIOD_NS / 2) clk = ~clk;
-
     initial begin
         $dumpfile("simulation.vcd");
         $dumpvars(0, TB_uart);
 
         // Initialize Inputs
+        i_control = 0;
         i_RW = 0;
+        i_uart_control_ce = 1;
+        #20;
+        i_control = 2;
+        #20;
+        i_RW = 1;
         i_uart_data_ce = 0;
         i_uart_control_ce = 0;
-        reset = 1;
-        #10;
+        i_UART_TX = 1;
+
         reset = 0;
-      #100000;
+        #20;
+        reset = 1;
+        #20;
+        reset = 0;
+        #20;
+        i_UART_TX = 0;
+        #60;
+        i_UART_TX = 1;
+        #30
+        i_UART_TX = 1;
+
+
+       #800;
+       i_uart_data_ce = 1;
+       #20;
+       i_uart_data_ce = 0; 
+       #100;
+       i_uart_rxdata = 8'h01;
+       i_RW = 0;
+       i_uart_data_ce = 1;
+       #20;
+       i_RW = 1;
+       i_uart_data_ce = 0;
+       #800;
+
+
+
  
 
 
