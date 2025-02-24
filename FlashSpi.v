@@ -31,7 +31,7 @@ module spi_flash_controller (
             o_SPI_CLK = ~o_SPI_CLK;
             o_MemoryReady <= 1'b0; // Insert a wait state to the 6809 to allow time to access data.
 
-            if (~o_SPI_CLK) begin
+            if (o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
                 if (bit_counter < 6'd8) begin
                     // Send SPI command (8 bits)
@@ -57,8 +57,8 @@ module spi_flash_controller (
         end 
         else begin
             // Idle state: set SPI signals to default
-            o_SPI_MOSI <= 1'b1; // High Impedance at idle
-            o_SPI_CLK <= 1'b1; // need to be high at idle for SPI Mode 3 (CPOL = 1, CPHA = 1)
+            o_SPI_MOSI <= 1'bz; // High Impedance at idle
+            o_SPI_CLK <= 1'b0; // need to be low at idle for SPI Mode 0 (CPOL = 0, CPHA = 0) The FT2232 supports mode 0 so follow that requirement
             o_MemoryReady <= 1'b1; // Release wait state allow the 6809 to continue
         end
     end
