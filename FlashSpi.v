@@ -13,20 +13,26 @@ module spi_flash_controller (
 
     wire [7:0] spi_command = 8'h03; // Command for SPI flash (READ command is 0x03)
     reg [23:0] spi_address = 24'b0; // Address for SPI flash
+    reg [23:0] last_spi_address = 24'b0; // Address for SPI flash
     reg [7:0] spi_data = 8'b0;      // Data read from SPI flash
     reg [5:0] bit_counter = 6'b0;   // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg spi_active = 0;             // Indicates SPI operation is active
 
     always @(posedge clk) begin
+
         if (spi_ce && i_RW && !spi_active) begin
             // Start SPI transaction
-            o_SPI_CS <= 1'b0;                    // Activate SPI chip select
+                   // Activate SPI chip select
             spi_address <= {8'b0, i_ADDRESS_BUS}; // Prepare 24-bit address
-            spi_active <= 1'b1;                  // Mark SPI as active
-            bit_counter <= 6'd0;                 // Reset bit counter
+            if(spi_address != last_spi_address) begin
+                spi_active <= 1'b1;                  // Mark SPI as active
+                bit_counter <= 6'd0;                 // Reset bit counter
+                last_spi_address <= spi_address;
+            end
         end
 
         if (spi_active) begin
+            o_SPI_CS <= 1'b0; 
             // Toggle SPI clock
             o_SPI_CLK = ~o_SPI_CLK;
             o_MemoryReady <= 1'b0; // Insert a wait state to the 6809 to allow time to access data.

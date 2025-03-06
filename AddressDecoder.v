@@ -24,19 +24,19 @@ module address_decoder (
     always @(*) begin
         // Default values
         sram_ce = 1'b0;  // Deactivate SRAM by default
-        spi_ce = 1'b1;   // Deactivate SPI Flash by default
+        spi_ce = 1'b0;   // Deactivate SPI Flash by default
         uart_data_ce = 1'b0;
         uart_status_ce = 1'b0;
         uart_control_ce = 1'b0;
 
         // Check if address is in SRAM range
         if (address >= SRAM_START && address <= SRAM_END) begin
-            sram_ce = 1'b1;   // Activate SRAM chip enable
+            sram_ce = 1'b0;   // Activate SRAM chip enable
         end
 
         // Check if address is in SPI Flash range and that FT2232 is not active low on the chip select, if active low then its controling the flash chip.
         if (address >= FLASH_START && address <= FLASH_END && i_FT_CS) begin
-            spi_ce = 1'b0;    // Activate SPI Flash chip select
+            spi_ce = 1'b1;    // Activate SPI Flash chip select
         end
         if (address == UART_DATA) begin
             uart_data_ce = 1'b1;
