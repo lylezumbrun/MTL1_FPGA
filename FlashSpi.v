@@ -1,5 +1,6 @@
 module spi_flash_controller (
-    input spi_ce,               // SPI chip select signal from address decoder
+    input spi_ce,// SPI chip select signal from address decoder
+    input reset,               
     input [15:0] i_ADDRESS_BUS, // Address from 6809
     input i_RW,                 // Read/Write control signal (only reads for flash)
     input clk,                  // System clock
@@ -18,9 +19,18 @@ module spi_flash_controller (
     reg [5:0] bit_counter = 6'b0;   // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg spi_active = 0;             // Indicates SPI operation is active
 
+
+    always @(negedge reset) begin
+        spi_address <= 24'b0; // Reset address
+        last_spi_address <= 24'b0; // Reset address
+        spi_data <= 8'b0; // Reset data
+        bit_counter <= 6'b0; // Reset bit counter
+        spi_active <= 1'b0; // Reset SPI active flag
+    end
+
     always @(posedge clk) begin
 
-        if (spi_ce && i_RW && !spi_active) begin
+        if (spi_ce && i_RW && !spi_active && reset) begin // Reset is active low so if reset is high proceed with the transaction
             // Start SPI transaction
                    // Activate SPI chip select
             spi_address <= {8'b0, i_ADDRESS_BUS}; // Prepare 24-bit address
@@ -44,7 +54,7 @@ module spi_flash_controller (
                     o_SPI_MOSI <= spi_command[7 - bit_counter];
                 end else if (bit_counter < 6'd32) begin
                     // Send SPI address (24 bits)
-                    o_SPI_MOSI <= spi_address[31 - bit_counter];
+                  o_SPI_MOSI <= spi_address[31 - bit_counter];
                 end else if (bit_counter < 6'd40) begin
                     // Receive SPI data (8 bits)
                     spi_data[7 - (bit_counter - 6'd32)] <= i_SPI_MISO;

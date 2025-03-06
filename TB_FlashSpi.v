@@ -2,6 +2,7 @@
 module tb_spi_flash_controller;
 
     reg spi_ce;
+    reg reset;
     reg [15:0] i_ADDRESS_BUS;
     reg i_RW;
     reg clk;
@@ -15,6 +16,7 @@ module tb_spi_flash_controller;
     // Instantiate the Unit Under Test (UUT)
     spi_flash_controller uut (
         .spi_ce(spi_ce),
+        .reset(reset),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_RW(i_RW),
         .clk(clk),
@@ -34,6 +36,12 @@ module tb_spi_flash_controller;
     // Simulation task for SPI flash read operation
     task spi_flash_read(input [15:0] address);
         begin
+            reset = 1;
+            #10;
+            reset = 0;
+            #10;
+            reset = 1;
+            #10;
             spi_ce = 1;
             i_RW = 1;
             i_ADDRESS_BUS = address;

@@ -114,6 +114,7 @@ module top (
     // SPI Flash Controller
     spi_flash_controller spi_ctrl (
         .spi_ce(spi_ce),
+        .reset(io_RESET),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_RW(i_RW),
         .clk(clk_internal),

@@ -1,4 +1,4 @@
-    module uart_interface (
+module uart_interface (
     input i_RW,
     input i_uart_data_ce,
     input i_uart_control_ce, 
@@ -39,8 +39,8 @@
    
        
     // Baud Rate Generator
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
+    always @(posedge clk or negedge reset) begin
+        if (!reset) begin
             counter <= 0;
             baud_clk <= 0;
         end else begin
@@ -54,74 +54,73 @@
     end
 
     // UART RX Process
-   always @(posedge baud_clk or posedge reset) begin
-      if (reset) begin
-         rx_state <= RXIDLE; // default to IDLE state
-         rx_bit_counter <= 0; // set counter to zero
-         uart_rx_data <= 8'b0; // zero register
-      end else begin
-         case (rx_state)
-           RXIDLE: begin
-              if (!i_UART_TX) begin // Start bit detected (low)
-                 rx_state <= RECEIVE; // change to state to receive
-                 rx_bit_counter <= 0; // set counter to zero
-              end
-           end
-           RECEIVE: begin
-                 uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits. LSB is dropped with each cycle
-                 if (rx_bit_counter == 7) begin
-                    rx_state <= RXIDLE;
-                 end
-                 rx_bit_counter <= rx_bit_counter + 1;
-           end
-         endcase
-      end
-   end  
-  // UART TX Process
-    always @(posedge baud_clk or posedge reset) begin
-        if (reset) begin
+    always @(posedge baud_clk or negedge reset) begin
+        if (!reset) begin
+            rx_state <= RXIDLE; // default to IDLE state
+            rx_bit_counter <= 0; // set counter to zero
+            uart_rx_data <= 8'b0; // zero register
+        end else begin
+            case (rx_state)
+                RXIDLE: begin
+                    if (!i_UART_TX) begin // Start bit detected (low)
+                        rx_state <= RECEIVE; // change to state to receive
+                        rx_bit_counter <= 0; // set counter to zero
+                    end
+                end
+                RECEIVE: begin
+                    uart_rx_data <= {i_UART_TX, uart_rx_data[7:1]}; // shift in the received bit to MSB by concentation TX-->BITS(7-1) makes 8 bits. LSB is dropped with each cycle
+                    if (rx_bit_counter == 7) begin
+                        rx_state <= RXIDLE;
+                    end
+                    rx_bit_counter <= rx_bit_counter + 1;
+                end
+            endcase
+        end
+    end
+
+    // UART TX Process
+    always @(posedge baud_clk or negedge reset) begin
+        if (!reset) begin
             tx_state <= TXIDLE;
             tx_bit_counter <= 0;
             o_UART_RX <= 1'b1; // Idle state (high)
-	    o_uart_status[1] <= 1'b0; // clear the transmit busy flag
+            o_uart_status[1] <= 1'b0; // clear the transmit busy flag
         end else begin
-	   case (tx_state)
-	     TXIDLE: begin
-            if (transmit_flag) begin   
-                tx_state <= TRANSMIT;
-                o_uart_status[1] <= 1'b1; // Set the transmit busy flag
-                tx_bit_counter <= 0;
-                uart_tx_data <= {1'b1, uart_data_out, 1'b0}; // Append stop and start bit
-            end
-	     end
-	     TRANSMIT: begin
-            o_UART_RX <= uart_tx_data[tx_bit_counter];
-            tx_bit_counter <= tx_bit_counter + 1;
-            if (tx_bit_counter == 9) begin
-                o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
-                tx_state <= TXIDLE;
-                o_UART_RX <= 1'b1; // Idle line
-            end
-	     end
-	   endcase
+            case (tx_state)
+                TXIDLE: begin
+                    if (transmit_flag) begin   
+                        tx_state <= TRANSMIT;
+                        o_uart_status[1] <= 1'b1; // Set the transmit busy flag
+                        tx_bit_counter <= 0;
+                        uart_tx_data <= {1'b1, uart_data_out, 1'b0}; // Append stop and start bit
+                    end
+                end
+                TRANSMIT: begin
+                    o_UART_RX <= uart_tx_data[tx_bit_counter];
+                    tx_bit_counter <= tx_bit_counter + 1;
+                    if (tx_bit_counter == 9) begin
+                        o_uart_status[1] <= 1'b0; // clear the transmit status busy flag
+                        tx_state <= TXIDLE;
+                        o_UART_RX <= 1'b1; // Idle line
+                    end
+                end
+            endcase
         end
     end
 
     // Assign the IRQ output and control register for UART TX
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
+    always @(posedge clk or negedge reset) begin
+        if (!reset) begin
             o_IRQ <= 1'b1; // Interrupt inactive (default high)
             transmit_flag <= 1'b0;
             o_uart_status[0] <= 1'b0; // clear rx data ready flag
             DataRead <= 1'b0;
-        end 
-        else begin
-            if(i_RW && i_uart_control_ce) begin
+        end else begin
+            if (i_RW && i_uart_control_ce) begin
                 o_control <= control_uart;
             end 
             if (!i_RW && i_uart_control_ce) begin
                 control_uart <= i_control;
-                
             end
             if (!i_RW && i_uart_data_ce && !tx_state) begin
                 uart_data_out <= i_uart_rxdata;
@@ -132,12 +131,12 @@
             end
             if (rx_bit_counter == 8 && rx_state == RXIDLE && !DataRead) begin
                 o_uart_status[0] <= 1'b1;  // Set RX data ready flag
-                 if (control_uart[1]) begin
-                       o_IRQ <= 1'b0;  // Assert interrupt (active-low)
+                if (control_uart[1]) begin
+                    o_IRQ <= 1'b0;  // Assert interrupt (active-low)
                 end
             end
             if (rx_state == RECEIVE) begin
-               DataRead = 1'b0;
+                DataRead = 1'b0;
             end
             if (i_RW && i_uart_data_ce) begin
                 o_uart_txdata <= uart_rx_data;  // Copy data to bus
@@ -145,13 +144,6 @@
                 o_uart_status[0] <= 1'b0;  // Set RX data ready flag
                 DataRead <= 1'b1;
             end
-
-            
-
+        end
     end
-end
-
-
-
-
 endmodule // uart_interface
