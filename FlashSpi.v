@@ -20,15 +20,18 @@ module spi_flash_controller (
     reg spi_active = 0;             // Indicates SPI operation is active
 
 
-    always @(negedge reset) begin
-        spi_address <= 24'b0; // Reset address
-        last_spi_address <= 24'b0; // Reset address
-        spi_data <= 8'b0; // Reset data
-        bit_counter <= 6'b0; // Reset bit counter
-        spi_active <= 1'b0; // Reset SPI active flag
-    end
+
 
     always @(posedge clk) begin
+
+        if(~reset)begin
+            spi_address <= 24'b0; // Reset address
+            last_spi_address <= 24'b0; // Reset address
+            spi_data <= 8'b0; // Reset data
+            bit_counter <= 6'b0; // Reset bit counter
+            spi_active <= 1'b0; // Reset SPI active flag
+        end
+
 
         if (spi_ce && i_RW && !spi_active && reset) begin // Reset is active low so if reset is high proceed with the transaction
             // Start SPI transaction
@@ -41,10 +44,10 @@ module spi_flash_controller (
             end
         end
 
-        if (spi_active) begin
+        if (spi_active && reset) begin
             o_SPI_CS <= 1'b0; 
             // Toggle SPI clock
-            o_SPI_CLK = ~o_SPI_CLK;
+            o_SPI_CLK <= ~o_SPI_CLK;
             o_MemoryReady <= 1'b0; // Insert a wait state to the 6809 to allow time to access data.
 
             if (o_SPI_CLK) begin

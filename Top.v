@@ -29,7 +29,7 @@ module top (
     output	 o_CE,		// SRAM Chip enable active low
     output	 o_CE2,		// SRAM Chip Enable active high
     output	 o_HALT,	// Assert HALT active low signal to 6809
-    inout	 io_RESET,	// Assert RESET signal to 6809
+    input	 io_RESET,	// Assert RESET signal to 6809
     output	 o_FIRQ,	// Assert a fast interrupt to 6809
     output	 o_IRQ,		// Assert a interrupt to 6809
     output	 o_CONTROL2_OE,	// Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
@@ -37,7 +37,7 @@ module top (
     output	 o_DBUS_OE,	// Enable Bidirectional Voltage-Level Translator for Data bus
     output	 o_ABUS_OE,	// Enable Bidirectional Voltage-Level Translator Address Bus
     output	 o_DBEN,	// Assert low to force 6809 disconnect from databus to high impedance state
-    output	 o_DMA,		// Assert low to suspend program execution and make the buses available for another use such as a direct memory access or a dynamic memory refresh.
+    // output	 o_DMA,		// Assert low to suspend program execution and make the buses available for another use such as a direct memory access or a dynamic memory refresh.
     output	 o_MRDY,	// driving MRDY low indicates that "memory is not ready". The 6809 will then stretch the E and Q clocks by multiples of a quarter period. If a peripheral needs to be accessed that happens to be slow, the CPU effectively stalls until the peripheral is ready
     // FT2232 SPI Interface used to write a ROM file to flash connected to FPGA
     input	 i_FT_SCK,	// SPI Clock from FT2232
@@ -169,7 +169,7 @@ module top (
     assign o_DBUS_OE = 1'b1;
 
     // Set to high impedance or disconnected state
-    assign o_DBEN = 1'bz;
+    assign o_DBEN = 1'b0; // Set low to enable data bus to adapter
     assign o_DMA = 1'bz;
     assign o_FIRQ = 1'bz;
 
