@@ -9,11 +9,23 @@ module address_decoder (
 );
 
     // Defined address ranges for SRAM
+    parameter SRAM_START = 16'h1000;
+    parameter SRAM_END = 16'h1FFF;   // SRAM range: 0x0000 to 0x0FFF (4KB)
+    // Defined address ranges for ROM
+    parameter FLASH_START = 16'h2000; // Starting address for SPI flash (0xF000)
+    parameter FLASH_END = 16'h2FFF;   // Ending address for SPI flash (0xFFFF)
+
+    /* Defined address ranges for SRAM
     parameter SRAM_START = 16'h0000;
     parameter SRAM_END = 16'h0FFF;   // SRAM range: 0x0000 to 0x0FFF (4KB)
     // Defined address ranges for ROM
     parameter FLASH_START = 16'hF000; // Starting address for SPI flash (0xF000)
     parameter FLASH_END = 16'hFFFF;   // Ending address for SPI flash (0xFFFF)
+*/
+
+
+
+
     // Defined addresses for UART I/O
     parameter UART_DATA = 16'hA000; // Register for sending and receive UART data
     parameter UART_STATUS = 16'hA001; // UART Status Register
