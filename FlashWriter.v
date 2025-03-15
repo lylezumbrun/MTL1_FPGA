@@ -1,5 +1,5 @@
 
-// Input CS needs pulled up and MISO pulled up when not in use.
+// Input CS needs pulled up and MISO pulled up when not in use. SPI device uses SPI Mode 0, with active low Chip Select
 
 module spi_flash_writer (
     input i_FT_CS,

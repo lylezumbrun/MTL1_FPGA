@@ -43,7 +43,6 @@ module tb_spi_flash_controller;
             reset = 1;
             #10;
             spi_ce = 1;
-            i_RW = 1;
             i_ADDRESS_BUS = address;
             #882;  // Wait for SPI operation to begin
             #24 i_SPI_MISO = 1;
@@ -62,14 +61,14 @@ module tb_spi_flash_controller;
         // Initialize Inputs
         spi_ce = 0;
         i_ADDRESS_BUS = 16'h0000;
-        i_RW = 0;
+        i_RW = 1;
         i_SPI_MISO = 0;
 
         // Reset SPI Controller signals
         #100;
 
         // Stimulate SPI flash read for address 0x1234
-        spi_flash_read(16'hfffd);
+        spi_flash_read(16'h3AAA);
 
         $display("Final SPI Data Received: %h", o_DATA);
         $finish;

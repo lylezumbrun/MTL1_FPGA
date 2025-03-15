@@ -28,7 +28,7 @@ module top (
     inout [7:0]	 DATA_BUS,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
-    input	 i_E,		// Enable signal from 6809
+    input    i_E,
     output	 o_WE,		// SRAM Write Enable
     output	 o_RE,		//SRAM Read Enable
     output	 o_CE,		// SRAM Chip enable active low
@@ -40,7 +40,7 @@ module top (
     output	 o_DBUS_OE,	// Enable Bidirectional Voltage-Level Translator for Data bus
     output	 o_ABUS_OE,	// Enable Bidirectional Voltage-Level Translator Address Bus
     output	 o_MRDY,	// driving MRDY low indicates that "memory is not ready". The 6809 will then stretch the E and Q clocks by multiples of a quarter period. If a peripheral needs to be accessed that happens to be slow, the CPU effectively stalls until the peripheral is ready
-   
+    output   o_DBEN,
     // FT2232 SPI Interface used to write a ROM file to flash connected to FPGA
     input	 i_FT_SCK,	// SPI Clock from FT2232
     input	 i_FT_MOSI,	// Master Out, Slave In (FT2232 to FPGA)
@@ -81,7 +81,7 @@ module top (
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("88.67") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
+        .NOM_FREQ("26.6") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
@@ -94,6 +94,7 @@ module top (
     address_decoder addr_dec (
         .i_FT_CS(i_FT_CS),
         .address(i_ADDRESS_BUS),
+        .i_enable(i_E),
         .sram_ce(sram_ce),
         .spi_ce(spi_ce),
         .uart_data_ce(uart_data_ce),
@@ -105,7 +106,6 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
-        .i_Enable(i_E),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
@@ -173,6 +173,7 @@ module top (
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY = (spi_ce && i_RW) ? memory_ready : 1'bz; 
+    assign o_DBEN = (spi_ce || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
 
   
     // Multiplexer to choose the active SPI clock driver
