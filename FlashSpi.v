@@ -37,6 +37,7 @@ module spi_flash_controller (
                 spi_active <= 1'b1;         // Mark SPI as active
                 last_spi_address <= spi_address; // Store the last address
                 bit_counter <= 6'd0;        // Reset bit counter
+                
             end
         end
 
@@ -68,7 +69,6 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_active <= 1'b0;      // Mark SPI as inactive
                     o_DATA <= spi_data;      // Output received data to 6809
-                    o_MemoryReady <= 1'b1;   // Release wait state
                 end
             end
         end else begin
