@@ -27,7 +27,7 @@ module spi_flash_controller (
             spi_data <= 8'b0;          // Reset data
             bit_counter <= 6'b0;       // Reset bit counter
             spi_active <= 1'b0;        // Reset SPI active flag
-            o_SPI_CLK <= 1'b0;         // Reset SPI clock
+            o_SPI_CLK = 1'b0;         // Reset SPI clock
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
@@ -46,6 +46,7 @@ module spi_flash_controller (
             if (bit_counter > 6'd0) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
             end
+
 
             if (~o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
