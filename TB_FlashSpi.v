@@ -41,13 +41,18 @@ module tb_spi_flash_controller;
             reset = 0;
             #10;
             reset = 1;
-            #10;
+            #24;
             spi_ce = 1;
             i_ADDRESS_BUS = address;
-            #882;  // Wait for SPI operation to begin
+            #762;  // Wait for SPI operation to begin
+            #24 i_SPI_MISO = 1;
+            #24 i_SPI_MISO = 1;
+            #24 i_SPI_MISO = 1;
+            #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 0;
             #24 i_SPI_MISO = 1;
+            #24 i_SPI_MISO = 0;
             spi_ce = 0;
             i_RW = 0;
             #100;  // Return to idle state after operation

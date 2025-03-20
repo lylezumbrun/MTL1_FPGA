@@ -37,7 +37,7 @@ module spi_flash_controller (
                 spi_active <= 1'b1;         // Mark SPI as active
                 last_spi_address <= spi_address; // Store the last address
                 bit_counter <= 6'd0;        // Reset bit counter
-                
+                o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
             end
         end
 
@@ -69,13 +69,13 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_active <= 1'b0;      // Mark SPI as inactive
                     o_DATA <= spi_data;      // Output received data to 6809
+                    o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
                 end
             end
         end else begin
             // Idle state: set SPI signals to default
             o_SPI_MOSI <= 1'bz;        // High Impedance at idle
             o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
-            o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
             o_SPI_CS <= 1'b1;        // Deactivate SPI chip select
             
         end
