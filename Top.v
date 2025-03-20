@@ -28,6 +28,7 @@ module top (
     inout [7:0]	 DATA_BUS,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
+    input	 i_Q,		// Phase signal from 6809
     input    i_E,
     output	 o_WE,		// SRAM Write Enable
     output	 o_RE,		//SRAM Read Enable
@@ -81,7 +82,7 @@ module top (
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("26.6") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
+        .NOM_FREQ("13.3") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
@@ -95,6 +96,7 @@ module top (
         .i_FT_CS(i_FT_CS),
         .address(i_ADDRESS_BUS),
         .i_enable(i_E),
+        .i_Q(i_Q),
         .sram_ce(sram_ce),
         .spi_ce(spi_ce),
         .uart_data_ce(uart_data_ce),
@@ -133,7 +135,6 @@ module top (
         .i_FT_SCK(i_FT_SCK),	// SPI Clock from FT2232
         .i_FT_MOSI(i_FT_MOSI),	// Master Out, Slave In (FT2232 to FPGA)
     	.o_FT_MISO(o_FT_MISO),
-
         .i_SPI_MISO(i_SPI_MISO),
         .o_SPI_CLK(spi_clk_writer),
         .o_SPI_MOSI(spi_mosi_writer),
@@ -172,7 +173,7 @@ module top (
     assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
-    assign o_MRDY = (spi_ce && i_RW) ? memory_ready : 1'bz; 
+    assign o_MRDY =  memory_ready; 
     assign o_DBEN = (spi_ce || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
 
   
