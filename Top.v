@@ -134,21 +134,21 @@ module top (
     assign o_ABUS_OE = 1'b1;
     assign o_DBUS_OE = 1'b1;
 
-    // Data Bus Handling with `always` blocks to avoid conflicts
+  
     reg [7:0] data_bus_out;
-    assign DATA_BUS = (i_RW && i_E) ? data_bus_out : 8'bz;
+    assign DATA_BUS = i_RW ? data_bus_out : 8'bz;
 
     always @(*) begin
-        if (spi_ce && i_RW && i_E) begin
+        if (spi_ce) begin
             data_bus_out = spi_data;
-        end else if (uart_data_ce && i_RW && i_E) begin
+        end else if (uart_data_ce) begin
             data_bus_out = uart_txdata;
-        end else if (uart_status_ce && i_RW && i_E) begin
+        end else if (uart_status_ce) begin
             data_bus_out = uart_status;
-        end else if (uart_control_ce && i_RW && i_E) begin
+        end else if (uart_control_ce) begin
             data_bus_out = output_uart_control;
         end else begin
-            data_bus_out = 8'bz;
+            data_bus_out = 8'b0;
         end
     end
 
