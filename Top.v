@@ -26,6 +26,7 @@ output	 o_DBEN,	// Assert low to force 6809 disconnect from databus to high impe
 module top (
     // MTL1 6809 interface
     inout [7:0]	 DATA_BUS,	// 8-bit bidirectional data bus
+    output [7:0] DATA_BUS_TEST,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
     input	 i_Q,		// Phase signal from 6809
@@ -56,7 +57,12 @@ module top (
     output	 o_SPI_CLK,
     output	 o_SPI_MOSI,
     output	 o_SPI_CS,
-    input	 i_SPI_MISO
+    input	 i_SPI_MISO,
+
+    output	 o_SPI_CLK_M,
+    output	 o_SPI_MOSI_M,
+    output	 o_SPI_CS_M,
+    output	 i_SPI_MISO_M
 );
 
 	wire clk_internal;
@@ -164,6 +170,12 @@ module top (
     assign o_ABUS_OE = 1'b1;
     assign o_DBUS_OE = 1'b1;
 
+
+    assign DATA_BUS_TEST = spi_data;
+    assign o_SPI_CLK_M = spi_clk_ctrl;
+    assign o_SPI_MOSI_M = spi_mosi_ctrl;
+    assign o_SPI_CS_M = spi_cs_ctrl;
+    assign i_SPI_MISO_M = i_SPI_MISO;
 
 
     // Data Bus Handling
