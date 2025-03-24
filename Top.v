@@ -88,7 +88,7 @@ module top (
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("13.3") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
+        .NOM_FREQ("33.25") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output

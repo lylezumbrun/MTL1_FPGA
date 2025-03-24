@@ -19,7 +19,9 @@ module spi_flash_controller (
     reg [7:0] spi_data = 8'b0;        // Data read from SPI flash
     reg [5:0] bit_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg [5:0] memoryready_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
+    reg [5:0] memoryready_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg spi_active = 0;               // Indicates SPI operation is active
+    reg clock_delay = 0;
     reg clock_delay = 0;
 
     always @(posedge clk) begin
@@ -41,27 +43,42 @@ module spi_flash_controller (
                 bit_counter <= 6'd0;        // Reset bit counter
                 clock_delay <= 1'b0;
 
+                clock_delay <= 1'b0;
+                o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
+
             end
         end
 
         if (spi_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
-            o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
 
             if (clock_delay) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
                 memoryready_counter <= 6'd0;
+                memoryready_counter <= 6'd0;
             end
+            clock_delay <= 1'b1;
             clock_delay <= 1'b1;
 
             if (~o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
+                if (bit_counter < 6'd8) begin //7
                 if (bit_counter < 6'd8) begin //7
                     // Send SPI command (8 bits)
                     o_SPI_MOSI <= spi_command[7 - bit_counter];
                 end else if (bit_counter < 6'd32) begin
                     // Send 24-bit SPI address (address starts at bit 8)
                     o_SPI_MOSI <= spi_address[31 - bit_counter];
+                end else if (bit_counter == 6'd40) begin
+                    // End of SPI transaction
+                    spi_active <= 1'b0;      // Mark SPI as inactive
+                    o_DATA <= spi_data;      // Output received data to 6809   
+                end
+
+
+            end
+            else begin
+                if (bit_counter < 6'd40) begin
                 end else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_active <= 1'b0;      // Mark SPI as inactive
