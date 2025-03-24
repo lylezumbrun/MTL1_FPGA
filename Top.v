@@ -126,13 +126,14 @@ module top (
         .spi_ce(spi_ce),
         .reset(i_RESET),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
+        .i_DataBus(DATA_BUS),
         .i_RW(i_RW),
         .clk(clk_internal),
         .i_SPI_MISO(i_SPI_MISO),
         .o_SPI_CLK(spi_clk_ctrl),
         .o_SPI_MOSI(spi_mosi_ctrl),
         .o_SPI_CS(spi_cs_ctrl),
-        .o_DATA(spi_data),
+        .o_spi_data(spi_data),
         .o_MemoryReady(memory_ready)
     );
 
@@ -179,7 +180,7 @@ module top (
 
 
     // Data Bus Handling
-    assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
+    assign DATA_BUS = (spi_ce && i_RW && memory_ready) ? spi_data : 8'bz;
     assign DATA_BUS = (uart_data_ce && i_RW) ? uart_txdata : 8'bz;
     assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;

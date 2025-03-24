@@ -24,7 +24,7 @@ module tb_spi_flash_controller;
         .o_SPI_CLK(o_SPI_CLK),
         .o_SPI_MOSI(o_SPI_MOSI),
         .o_SPI_CS(o_SPI_CS),
-        .o_DATA(o_DATA),
+        .o_spi_data(o_DATA),
         .o_MemoryReady(o_MemoryReady)
     );
 
@@ -44,7 +44,7 @@ module tb_spi_flash_controller;
             #24;
             spi_ce = 1;
             i_ADDRESS_BUS = address;
-            #762;  // Wait for SPI operation to begin
+            #774;  // Wait for SPI operation to begin
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 1;
