@@ -37,7 +37,7 @@ module address_decoder (
         uart_control_ce = 1'b0;
 
         // Check if address is in SRAM range
-        if (address >= SRAM_START && address <= SRAM_END && i_Q) begin
+        if (address >= SRAM_START && address <= SRAM_END && i_enable) begin
             sram_ce = 1'b1;   // Activate SRAM chip enable
         end
 
