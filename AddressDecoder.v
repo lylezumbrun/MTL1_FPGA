@@ -42,7 +42,7 @@ module address_decoder (
         end
 
         // Check if address is in SPI Flash range and that FT2232 is not active low on the chip select, if active low then its controling the flash chip.
-        if (address >= FLASH_START && address <= FLASH_END && i_FT_CS && i_enable) begin
+        if (address >= FLASH_START && address <= FLASH_END && i_FT_CS) begin
             spi_ce = 1'b1;    // Activate SPI Flash chip select
         end
         if (address == UART_DATA && i_enable) begin

@@ -180,14 +180,14 @@ module top (
 
 
     // Data Bus Handling
-    assign DATA_BUS = (spi_ce && i_RW && memory_ready) ? spi_data : 8'bz;
+    assign DATA_BUS = (spi_ce && i_RW) ? spi_data : 8'bz;
     assign DATA_BUS = (uart_data_ce && i_RW) ? uart_txdata : 8'bz;
     assign uart_rxdata = (uart_data_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_status_ce && i_RW) ? uart_status : 8'bz;
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
-    assign o_DBEN = (spi_ce || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
 
   
     // Multiplexer to choose the active SPI clock driver

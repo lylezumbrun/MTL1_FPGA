@@ -35,13 +35,13 @@ module spi_flash_controller (
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
-        if (spi_ce && i_RW && !spi_read_active && reset) begin
+        if (spi_ce && i_RW && !spi_read_active && !spi_write_active && reset) begin
             spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             spi_read_active <= 1'b1;         // Mark SPI as active
             bit_counter <= 6'd0;        // Reset bit counter
             clock_delay <= 1'b0;
        end
-        if (spi_ce && ~i_RW && !spi_write_active && reset) begin
+        if (spi_ce && ~i_RW && !spi_write_active && !spi_read_active && reset) begin
             spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             spi_write_active <= 1'b1;         // Mark SPI as active
             bit_counter <= 6'd0;        // Reset bit counter
@@ -69,6 +69,7 @@ module spi_flash_controller (
                 end else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_read_active <= 1'b0;      // Mark SPI as inactive
+                    o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
                 end
             end
             else begin
@@ -101,6 +102,7 @@ module spi_flash_controller (
                 end else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_write_active <= 1'b0;      // Mark SPI as inactive
+                    o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
                 end
             end
             else begin
