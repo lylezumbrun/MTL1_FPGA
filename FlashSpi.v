@@ -101,17 +101,18 @@ module spi_flash_controller (
                 end else if (bit_counter < 6'd32) begin
                     // Send 24-bit SPI address (address starts at bit 8)
                     o_SPI_MOSI <= spi_address[31 - bit_counter];
-                end else if (bit_counter == 6'd40) begin
+                end
+                else if (bit_counter < 6'd40) begin
+                // Receive 8-bit data (after address)
+                o_SPI_MOSI <= spi_datawrite[7 - (bit_counter - 6'd32)];
+                end    
+                else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_write_active <= 1'b0;      // Mark SPI as inactive
                     o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
                 end
             end
             else begin
-                if (bit_counter < 6'd40) begin
-                    // Receive 8-bit data (after address)
-                    o_SPI_MOSI <= spi_datawrite[7 - (bit_counter - 6'd32)];
-                end
                 // Increment bit counter (always within 6-bit range, safe to truncate)
                 bit_counter <= bit_counter + 1;
             end
@@ -121,7 +122,6 @@ module spi_flash_controller (
             o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
             o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
             o_SPI_CS <= 1'b1;        // Deactivate SPI chip select
-            
         end
     end
 endmodule

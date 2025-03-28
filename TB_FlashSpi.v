@@ -4,6 +4,7 @@ module tb_spi_flash_controller;
     reg spi_ce;
     reg reset;
     reg [15:0] i_ADDRESS_BUS;
+    reg [7:0] i_DataBus;
     reg i_RW;
     reg clk;
     reg i_SPI_MISO;
@@ -18,6 +19,7 @@ module tb_spi_flash_controller;
         .spi_ce(spi_ce),
         .reset(reset),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
+        .i_DataBus(i_DataBus),
         .i_RW(i_RW),
         .clk(clk),
         .i_SPI_MISO(i_SPI_MISO),
@@ -54,7 +56,26 @@ module tb_spi_flash_controller;
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 0;
             spi_ce = 0;
+            i_RW = 1;
+            #100;  // Return to idle state after operation
+        end
+    endtask
+    // Simulation task for SPI flash read operation
+    task spi_flash_write(input [15:0] address, input [7:0] databus);
+        begin
+
+
+            #24;
+            #24;
+            #24;
             i_RW = 0;
+            spi_ce = 1;
+            i_ADDRESS_BUS = address;
+            i_DataBus = databus;
+            #966;  // Wait for SPI operation to begin
+
+            spi_ce = 0;
+            i_RW = 1;
             #100;  // Return to idle state after operation
         end
     endtask
@@ -67,7 +88,9 @@ module tb_spi_flash_controller;
         spi_ce = 0;
         i_ADDRESS_BUS = 16'h0000;
         i_RW = 1;
-        i_SPI_MISO = 0;
+
+        i_DataBus = 8'h00; // Default value to prevent high-Z
+
 
         // Reset SPI Controller signals
         #100;
@@ -76,6 +99,10 @@ module tb_spi_flash_controller;
         spi_flash_read(16'h3AAA);
 
         $display("Final SPI Data Received: %h", o_DATA);
+        // Initialize Inputs
+        spi_ce = 0;
+        i_RW = 1;
+        spi_flash_write(16'h3000, 8'hAA);
         $finish;
     end
 endmodule
