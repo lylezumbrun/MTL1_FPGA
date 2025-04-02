@@ -62,7 +62,9 @@ module top (
     output	 o_SPI_CLK_M,
     output	 o_SPI_MOSI_M,
     output	 o_SPI_CS_M,
-    output	 i_SPI_MISO_M
+    output	 i_SPI_MISO_M,
+
+    output o_RW
 );
 
 	wire clk_internal;
@@ -79,6 +81,7 @@ module top (
     wire spi_cs_ctrl;
     wire memory_ready;
 	wire [7:0] spi_data;
+    wire [7:0] dbusData;
     wire [7:0] uart_txdata;
     wire [7:0] uart_rxdata;
     wire [7:0] uart_status;
@@ -86,9 +89,10 @@ module top (
     wire [7:0] output_uart_control;
 
 
+
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("33.25") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
+        .NOM_FREQ("4.29") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
@@ -125,6 +129,8 @@ module top (
     spi_flash_controller spi_ctrl (
         .spi_ce(spi_ce),
         .reset(i_RESET),
+        .i_enable(i_E),
+        .i_Q(i_Q),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
         .i_RW(i_RW),
@@ -134,7 +140,8 @@ module top (
         .o_SPI_MOSI(spi_mosi_ctrl),
         .o_SPI_CS(spi_cs_ctrl),
         .o_spi_data(spi_data),
-        .o_MemoryReady(memory_ready)
+        .o_MemoryReady(memory_ready),
+        .spi_datawrite(dbusData)
     );
 
     spi_flash_writer spi_writer (
@@ -172,11 +179,13 @@ module top (
     assign o_DBUS_OE = 1'b1;
 
 
-    assign DATA_BUS_TEST = spi_data;
+    assign DATA_BUS_TEST = dbusData;
     assign o_SPI_CLK_M = spi_clk_ctrl;
     assign o_SPI_MOSI_M = spi_mosi_ctrl;
     assign o_SPI_CS_M = spi_cs_ctrl;
     assign i_SPI_MISO_M = i_SPI_MISO;
+
+    assign o_RW = i_RW;
 
 
     // Data Bus Handling
@@ -187,7 +196,7 @@ module top (
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
-    assign o_DBEN = (spi_ce && memory_ready || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready || spi_ce && !memory_ready && !i_RW || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
 
   
     // Multiplexer to choose the active SPI clock driver

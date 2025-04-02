@@ -51,7 +51,7 @@ module address_decoder (
         if (address == UART_STATUS && i_enable) begin
             uart_status_ce = 1'b1;
         end
-        if (address == UART_CONTROL && i_enable) begin
+        if (address == UART_CONTROL && i_enable && i_Q) begin
             uart_control_ce = 1'b1;
         end
     end
