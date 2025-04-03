@@ -45,7 +45,7 @@ module spi_flash_controller (
             bit_counter <= 6'd0;        // Reset bit counter
             clock_delay <= 1'b0;
        end
-       else if (spi_ce && !i_RW && !spi_write_active && !spi_read_active && reset && !i_enable) begin
+       else if (spi_ce && !i_RW && !spi_write_active && !spi_read_active && reset && i_enable && i_Q) begin
             spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             spi_write_active <= 1'b1;         // Mark SPI as active
             bit_counter <= 6'd0;        // Reset bit counter
