@@ -105,17 +105,20 @@ module spi_flash_controller (
                     // Send SPI command (8 bits)
                     o_SPI_MOSI <= spi_write_enable_command[7 - bit_counter];
                 end  
-                else if (bit_counter == 6'd8) begin
+            end
+            else begin
+                if (bit_counter == 6'd8) begin
                     // End of SPI transaction
                     spi_page_active <= 1'b1;      // Mark SPI page active
                     bit_counter <= 6'd0;        // Reset bit counter
                     clock_delay <= 1'b0;
                     o_SPI_CS <= 1'b1;           // Deactivate SPI chip select
+                    o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
                 end
-            end
-            else begin
                 // Increment bit counter (always within 6-bit range, safe to truncate)
+                else begin
                 bit_counter <= bit_counter + 1;
+                end
             end
         end
         // Write data to SPI flash
