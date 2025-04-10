@@ -1,4 +1,5 @@
 // SPI device uses SPI Mode 0, with active low Chip Select
+// Max speed rating of SPI Flash with read instruction is 50MHz. 
 module spi_flash_controller (
     input spi_ce,            // SPI chip select signal from address decoder
     input reset,             // Reset signal
@@ -46,7 +47,7 @@ module spi_flash_controller (
             bit_counter <= 6'd0;        // Reset bit counter
             clock_delay <= 1'b0;
        end
-       else if (spi_ce && !i_RW && !spi_write_active && !spi_read_active && reset && i_enable && i_Q) begin
+       else if (spi_ce && !i_RW && !spi_write_active && !spi_page_active && !spi_read_active && reset && i_enable) begin
             spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             spi_write_active <= 1'b1;         // Mark write enable as active
             spi_page_active <= 1'b0;         // Mark page as inactive

@@ -1,6 +1,7 @@
 module sram_controller(
     input sram_ce,      // Address decoder select
     input i_RW,        // Read/Write control signal from 6809 (low is write operation)
+    input i_enable,
     output reg o_WE,    // SRAM Write Enable
     output reg o_RE,    // SRAM Read Enable
     output reg o_CE,    // SRAM Chip Enable (active low)
@@ -19,7 +20,7 @@ module sram_controller(
         
 
         // If SRAM is selected and the enable signal is active
-        if (sram_ce) begin
+        if (sram_ce && i_enable) begin
             o_WE = i_RW;    // Write Enable (active low) when i_RW is low
             o_RE = !i_RW;     // Read Enable (active high) when i_RW is high
             o_CE = 1'b0;     // Activate SRAM chip enable (active low)

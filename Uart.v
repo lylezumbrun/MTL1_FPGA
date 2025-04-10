@@ -2,7 +2,7 @@ module uart_interface (
     input i_RW,
     input i_uart_data_ce,
     input i_uart_control_ce, 
-    input clk,                  // System clock (44.33 MHz)
+    input clk,                  // System clock
     input reset,                // System reset
     input i_UART_TX,            // FT2232 TX line (serial data from host)
     input [7:0] i_control,      // Input to Control register

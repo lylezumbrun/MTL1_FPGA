@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="Clock_PLL" module="PLL" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2025 04 04 22:04:28.335" version="5.8" type="Module" synthesis="lse" source_format="Verilog">
+  <Package>
+		<File name="Clock_PLL.lpc" type="lpc" modified="2025 04 04 22:04:24.127"/>
+		<File name="Clock_PLL.v" type="top_level_verilog" modified="2025 04 04 22:04:24.189"/>
+		<File name="Clock_PLL_tmpl.v" type="template_verilog" modified="2025 04 04 22:04:24.189"/>
+  </Package>
+</DiamondModule>

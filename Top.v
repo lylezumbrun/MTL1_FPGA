@@ -87,25 +87,40 @@ module top (
     wire [7:0] uart_status;
     wire [7:0] input_uart_control;
     wire [7:0] output_uart_control;
-
-
+    wire clk_100mhz;
+    wire clk_8mhz;
+    wire pll_locked;
+    wire E_Delayed;
 
 	   // Instantiate the internal oscillator
     OSCH #(
-        .NOM_FREQ("4.29") // Max speed rating of SPI Flash with read instruction is 50MHz, a 88.67 clock makes a 44.33mhz SPI CLK. 
+        .NOM_FREQ("133.00") 
     ) internal_oscillator (
         .STDBY(1'b0),  // Standby control (active-low) used to enable the oscillator. Here it is set to always on.
         .OSC(clk_internal), // Oscillator output
         .SEDSTDBY()         // Status (unused here)
     );
 
+     Clock_PLL clock_gen (
+        .CLKI(clk_internal),
+        .CLKOP(clk_100mhz),
+        .CLKOS(clk_8mhz),
+        .LOCK(pll_locked)
+    );
     // Address Decoder -  SRAM range: 0x0000 to 0x0FFF (4KB),  SPI flash 0xF000 to 0xFFFF
     // Instantiate the address decoder, this decodes the addresses and activates either the sram_ce or spi_cs. 
-
+    
+    e_clk_delay E_ClockDelay (
+        .i_clk(clk_100mhz),
+        .i_e_clk(i_E),
+        .o_e_delayed(E_Delayed)
+    );
+    
     address_decoder addr_dec (
         .i_FT_CS(i_FT_CS),
+        .i_reset(i_RESET),
         .address(i_ADDRESS_BUS),
-        .i_enable(i_E),
+        .i_enable(E_Delayed),
         .i_Q(i_Q),
         .sram_ce(sram_ce),
         .spi_ce(spi_ce),
@@ -118,6 +133,7 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
+        .i_enable(E_Delayed),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
@@ -129,12 +145,12 @@ module top (
     spi_flash_controller spi_ctrl (
         .spi_ce(spi_ce),
         .reset(i_RESET),
-        .i_enable(i_E),
+        .i_enable(E_Delayed),
         .i_Q(i_Q),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
         .i_RW(i_RW),
-        .clk(clk_internal),
+        .clk(clk_8mhz),
         .i_SPI_MISO(i_SPI_MISO),
         .o_SPI_CLK(spi_clk_ctrl),
         .o_SPI_MOSI(spi_mosi_ctrl),
@@ -159,7 +175,7 @@ module top (
         .i_RW(i_RW),
         .i_uart_data_ce(uart_data_ce),
         .i_uart_control_ce(uart_control_ce),
-        .clk(clk_internal),
+        .clk(clk_8mhz),
         .reset(i_RESET),
         .i_UART_TX(i_UART_TX),
         .i_control(input_uart_control),
@@ -196,12 +212,13 @@ module top (
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && i_E && !i_RW  || uart_control_ce || sram_ce) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_Delayed && !i_RW  || uart_control_ce || sram_ce && E_Delayed) ? 1'b0 : 1'b1;
 
   
     // Multiplexer to choose the active SPI clock driver
     assign o_SPI_CLK = i_FT_CS ? spi_clk_ctrl : spi_clk_writer;
     assign o_SPI_MOSI = i_FT_CS ? spi_mosi_ctrl : spi_mosi_writer;
     assign o_SPI_CS = i_FT_CS ? spi_cs_ctrl : spi_cs_writer;
+
 
 endmodule
