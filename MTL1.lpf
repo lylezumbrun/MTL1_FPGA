@@ -83,3 +83,6 @@ USE PRIMARY NET "clk_8mhz" ;
 USE PRIMARY NET "clk_100mhz" ;
 USE PRIMARY NET "clk_internal" ;
 USE SECONDARY NET "uart/baud_clk" ;
+USE SECONDARY NET "i_Q_c" ;
+USE SECONDARY NET "E_Delayed" ;
+USE SECONDARY NET "i_E_c" ;

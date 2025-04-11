@@ -21,15 +21,40 @@ module spi_flash_controller (
     wire [7:0] spi_read_command = 8'h03; // Command for SPI flash (READ command is 0x03)
     wire [7:0] spi_page_command = 8'h02; // Command for SPI flash (WRITE PAGE command is 0x02)
     wire [7:0] spi_write_enable_command = 8'h06; // Command for SPI flash (WRITE ENABLE command is 0x06)
-    reg [23:0] spi_address = 24'b0; // Address for SPI flash (24 bits)
+    reg [23:0] spi_readaddress = 24'b0; // Address for SPI flash (24 bits)
+    reg [23:0] spi_writeaddress = 24'b0; // Address for SPI flash (24 bits)
     reg [5:0] bit_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg spi_read_active = 0;               // Indicates SPI read operation is active
     reg spi_write_active = 0;               // Indicates SPI write enable operation is active
     reg spi_page_active = 0;               // Indicates SPI page operation is active
     reg clock_delay = 0;
-
+    reg start_write = 0;
+    reg start_read = 0;
     // SPI flash controller logic
     // Reset logic
+
+    always @(negedge i_enable) begin
+        if (!i_RW && spi_ce) begin
+            spi_datawrite <= i_DataBus;
+            spi_writeaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
+            start_write <= 1'b1;
+        end
+        else begin
+            start_write <= 1'b0;
+        end
+    end
+
+    always @(negedge i_Q) begin
+        if (i_RW && spi_ce) begin
+            spi_readaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
+            start_read <= 1'b1;
+        end
+        else begin
+            start_read <= 1'b0;
+        end
+    end
+
+
     always @(posedge clk) begin
         if (~reset) begin
             o_spi_data <= 8'b0;          // Reset data
@@ -41,19 +66,16 @@ module spi_flash_controller (
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
-        if (spi_ce && i_RW && !spi_read_active && !spi_write_active && reset && i_enable && i_Q) begin
-            spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
+        if (start_read && !spi_read_active && !spi_write_active && reset) begin
             spi_read_active <= 1'b1;         // Mark SPI as active
             bit_counter <= 6'd0;        // Reset bit counter
             clock_delay <= 1'b0;
        end
-       else if (spi_ce && !i_RW && !spi_write_active && !spi_page_active && !spi_read_active && reset && i_enable) begin
-            spi_address <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
+       else if (start_write && !spi_write_active && !spi_page_active && !spi_read_active && reset) begin
             spi_write_active <= 1'b1;         // Mark write enable as active
             spi_page_active <= 1'b0;         // Mark page as inactive
             bit_counter <= 6'd0;        // Reset bit counter
             clock_delay <= 1'b0;
-            spi_datawrite <= i_DataBus;
         end
 
         
@@ -74,7 +96,7 @@ module spi_flash_controller (
                     o_SPI_MOSI <= spi_read_command[7 - bit_counter];
                 end else if (bit_counter < 6'd32) begin
                     // Send 24-bit SPI address (address starts at bit 8)
-                    o_SPI_MOSI <= spi_address[31 - bit_counter];
+                    o_SPI_MOSI <= spi_readaddress[31 - bit_counter];
                 end else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_read_active <= 1'b0;      // Mark SPI as inactive
@@ -138,7 +160,7 @@ module spi_flash_controller (
                     o_SPI_MOSI <= spi_page_command[7 - bit_counter];
                 end else if (bit_counter < 6'd32) begin
                     // Send 24-bit SPI address (address starts at bit 8)
-                    o_SPI_MOSI <= spi_address[31 - bit_counter];
+                    o_SPI_MOSI <= spi_writeaddress[31 - bit_counter];
 
                 end
                 else if (bit_counter < 6'd40) begin

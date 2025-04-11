@@ -145,7 +145,7 @@ module top (
     spi_flash_controller spi_ctrl (
         .spi_ce(spi_ce),
         .reset(i_RESET),
-        .i_enable(E_Delayed),
+        .i_enable(i_E),
         .i_Q(i_Q),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
