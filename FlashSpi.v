@@ -44,7 +44,7 @@ module spi_flash_controller (
         end
     end
 
-    always @(negedge i_Q) begin
+    always @(posedge i_enable) begin
         if (i_RW && spi_ce) begin
             spi_readaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             start_read <= 1'b1;
