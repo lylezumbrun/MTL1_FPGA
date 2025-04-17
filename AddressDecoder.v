@@ -2,8 +2,6 @@ module address_decoder (
     input i_FT_CS,
     input i_reset,
     input [15:0] address,     // 16-bit address bus from 6809
-    input i_enable,
-    input i_Q,
     output reg sram_ce,       // SRAM chip enable
     output reg spi_ce,         // SPI flash chip select
     output reg uart_data_ce,
@@ -46,13 +44,13 @@ module address_decoder (
         if (address >= FLASH_START && address <= FLASH_END && i_FT_CS && i_reset) begin
             spi_ce = 1'b1;    // Activate SPI Flash chip select
         end
-        if (address == UART_DATA && i_enable && i_reset) begin
+        if (address == UART_DATA && i_reset) begin
             uart_data_ce = 1'b1;
         end
-        if (address == UART_STATUS && i_enable && i_reset) begin
+        if (address == UART_STATUS && i_reset) begin
             uart_status_ce = 1'b1;
         end
-        if (address == UART_CONTROL && i_enable && i_reset) begin
+        if (address == UART_CONTROL && i_reset) begin
             uart_control_ce = 1'b1;
         end
     end

@@ -90,7 +90,8 @@ module top (
     wire clk_100mhz;
     wire clk_8mhz;
     wire pll_locked;
-    wire E_Delayed;
+    wire E_LongDelay;
+    wire E_ShortDelay;
 
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -113,15 +114,14 @@ module top (
     e_clk_delay E_ClockDelay (
         .i_clk(clk_100mhz),
         .i_e_clk(i_E),
-        .o_e_delayed(E_Delayed)
+        .o_e_longdelay(E_LongDelay),
+        .o_e_shortdelay(E_ShortDelay)
     );
     
     address_decoder addr_dec (
         .i_FT_CS(i_FT_CS),
         .i_reset(i_RESET),
         .address(i_ADDRESS_BUS),
-        .i_enable(E_Delayed),
-        .i_Q(i_Q),
         .sram_ce(sram_ce),
         .spi_ce(spi_ce),
         .uart_data_ce(uart_data_ce),
@@ -133,7 +133,7 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
-        .i_enable(E_Delayed),
+        .i_enable(E_LongDelay),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
@@ -212,7 +212,7 @@ module top (
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_Delayed && !i_RW  || uart_control_ce || sram_ce && E_Delayed) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay) ? 1'b0 : 1'b1;
 
   
     // Multiplexer to choose the active SPI clock driver
