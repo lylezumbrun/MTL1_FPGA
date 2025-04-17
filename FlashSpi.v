@@ -66,10 +66,16 @@ module spi_flash_controller (
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
-        if (start_read && !spi_read_active && !spi_write_active && reset) begin
-            spi_read_active <= 1'b1;         // Mark SPI as active
-            bit_counter <= 6'd0;        // Reset bit counter
-            clock_delay <= 1'b0;
+        if (start_read && !spi_read_active && reset) begin
+            if(spi_write_active) begin
+               o_MemoryReady <= 1'b0;         // Wait for write to finish and then read
+            end
+            else begin
+                spi_read_active <= 1'b1;         // Mark SPI as active
+                bit_counter <= 6'd0;        // Reset bit counter
+                clock_delay <= 1'b0;
+            end
+
        end
        else if (start_write && !spi_write_active && !spi_page_active && !spi_read_active && reset) begin
             spi_write_active <= 1'b1;         // Mark write enable as active
@@ -115,8 +121,6 @@ module spi_flash_controller (
         // Enable Write data to SPI flash
         else if (spi_write_active && !spi_page_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
-            o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
-
             if (clock_delay) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
             end
