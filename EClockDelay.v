@@ -31,7 +31,7 @@ module e_clk_delay (
         // On falling edge of E, start delay
         else if (e_prev && ~i_e_clk) begin
             delaying <= 1;
-            counter <= 3'd4; // 4 cycles delay (40ns @ 100MHz)
+            counter <= 3'd48; // 4 cycles delay (50ns @ 100MHz)
             o_e_longdelay <= 1;
             o_e_shortdelay <= 1;
 

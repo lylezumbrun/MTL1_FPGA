@@ -133,7 +133,7 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
-        .i_enable(E_LongDelay),
+        .i_enable(i_E),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
