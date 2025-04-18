@@ -13,13 +13,13 @@ Optional Address area for additional I/O or memory
 0x1000 - 0x7FFF Memory Expansion Area
 0xA000 - 0xBFFF I/O Expansion Area
 
- input	 i_Q,		// Phase signal from 6809
- input	 i_BA,		// used to indicate that the buses (address and data) and the read/write output are in the high-impedance state
- input	 i_BS,		// indicates whether the CPU is currently actively using the system bus
+input	 i_Q,		// Phase signal from 6809
+input	 i_BA,		// used to indicate that the buses (address and data) and the read/write output are in the high-impedance state
+input	 i_BS,		// indicates whether the CPU is currently actively using the system bus
 output	 o_HALT,	// Assert HALT active low signal to 6809
- output	 o_FIRQ,	// Assert a fast interrupt to 6809
+output	 o_FIRQ,	// Assert a fast interrupt to 6809
 output	 o_DMA,		// Assert low to suspend program execution and make the buses available for another use such as a direct memory access or a dynamic memory refresh.
-output o_UART_RTS,
+output   o_UART_RTS,
 input	 i_UART_CTS,
 output	 o_DBEN,	// Assert low to force 6809 disconnect from databus to high impedance state
 */
@@ -30,12 +30,12 @@ module top (
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
     input	 i_Q,		// Phase signal from 6809
-    input    i_E,
+    input    i_E,       // E clock signal from 6809
     output	 o_WE,		// SRAM Write Enable
     output	 o_RE,		//SRAM Read Enable
     output	 o_CE,		// SRAM Chip enable active low
     output	 o_CE2,		// SRAM Chip Enable active high
-    input	 i_RESET,	// Assert RESET signal to 6809
+    input	 i_RESET,	// RESET signal
     output	 o_IRQ,		// Assert a interrupt to 6809
     output	 o_CONTROL2_OE,	// Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
     output	 o_CONTROL1_OE,	// Enable Bidirectional Voltage-Level Translator for DBEN, Q, BS, MRDY, DMA, R/W, E, BA
@@ -114,6 +114,7 @@ module top (
     e_clk_delay E_ClockDelay (
         .i_clk(clk_100mhz),
         .i_e_clk(i_E),
+        .i_reset(i_RESET),
         .o_e_longdelay(E_LongDelay),
         .o_e_shortdelay(E_ShortDelay)
     );
