@@ -1,6 +1,7 @@
 module e_clk_delay (
     input i_clk,          // Fast PLL clock (e.g., 100 MHz)
     input i_e_clk,        // 6809 E clock
+    input i_reset,        // Reset signal (active high)
     output reg o_e_longdelay = 0,  // Active-low buffer OE (initialized to disabled)
     output reg o_e_shortdelay = 0  // Active-low buffer OE (initialized to disabled)
 );
@@ -14,7 +15,7 @@ module e_clk_delay (
         e_prev <= i_e_clk;
 
         // While E is high, keep output enable active (1)
-        if (i_e_clk) begin
+        if (i_e_clk && i_reset) begin
             delaying <= 0;
             counter <= 0;
             o_e_longdelay <= 1;
