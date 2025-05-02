@@ -35,9 +35,9 @@ module spi_flash_controller (
 
     always @(negedge i_enable) begin
         if (!i_RW && spi_ce) begin
-            spi_datawrite <= i_DataBus;
             spi_writeaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             start_write <= 1'b1;
+            spi_datawrite <= i_DataBus;
         end
         else begin
             start_write <= 1'b0;

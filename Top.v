@@ -63,8 +63,9 @@ module top (
     output	 o_SPI_MOSI_M,
     output	 o_SPI_CS_M,
     output	 i_SPI_MISO_M,
-
-    output o_RW
+    output   o_SPI_CE,
+    output   o_RW,
+    output   o_E
 );
 
 	wire clk_internal;
@@ -133,7 +134,7 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
-        .i_enable(i_E),
+        .i_enable(E_LongDelay),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
@@ -145,7 +146,7 @@ module top (
     spi_flash_controller spi_ctrl (
         .spi_ce(spi_ce),
         .reset(i_RESET),
-        .i_enable(i_E),
+        .i_enable(E_LongDelay),
         .i_Q(i_Q),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
@@ -195,13 +196,15 @@ module top (
     assign o_DBUS_OE = 1'b1;
 
 
-    assign DATA_BUS_TEST = dbusData;
+    assign DATA_BUS_TEST = DATA_BUS;
     assign o_SPI_CLK_M = spi_clk_ctrl;
     assign o_SPI_MOSI_M = spi_mosi_ctrl;
     assign o_SPI_CS_M = spi_cs_ctrl;
     assign i_SPI_MISO_M = i_SPI_MISO;
 
     assign o_RW = i_RW;
+    assign o_SPI_CE = spi_ce;
+    assign o_E = E_LongDelay;
 
 
     // Data Bus Handling
