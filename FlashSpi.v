@@ -24,8 +24,10 @@ module spi_flash_controller (
     reg [23:0] spi_readaddress = 24'b0; // Address for SPI flash (24 bits)
     reg [23:0] spi_writeaddress = 24'b0; // Address for SPI flash (24 bits)
     reg [5:0] bit_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
+    reg [15:0] writedelay_counter = 0;
     reg spi_read_active = 0;               // Indicates SPI read operation is active
     reg spi_write_active = 0;               // Indicates SPI write enable operation is active
+    reg start_write_delay = 0;
     reg spi_page_active = 0;               // Indicates SPI page operation is active
     reg clock_delay = 0;
     reg start_write = 0;
@@ -67,8 +69,8 @@ module spi_flash_controller (
 
         // Start SPI transaction when chip select is active and it's a read cycle
         if (start_read && !spi_read_active && reset) begin
-            if(spi_write_active) begin
-               o_MemoryReady <= 1'b0;         // Wait for write to finish and then read
+            if(spi_write_active || start_write_delay) begin
+               o_MemoryReady <= 1'b0;         // Wait for write to finish and then read maybe change this to HALT signal.
             end
             else begin
                 spi_read_active <= 1'b1;         // Mark SPI as active
@@ -174,7 +176,9 @@ module spi_flash_controller (
                 else if (bit_counter == 6'd40) begin
                     // End of SPI transaction
                     spi_page_active <= 1'b0;      // Mark SPI as inactive
-                    spi_write_active <= 1'b0;      // Mark SPI as inactive
+                    spi_write_active <= 1'b0;      // Delay finished for write. 
+                    writedelay_counter <= 16'd40000;  // 5ms @ 8MHz
+                    start_write_delay <= 1'b1;
                 end
             end
             else begin
@@ -188,6 +192,15 @@ module spi_flash_controller (
             o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
             o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
             o_SPI_CS <= 1'b1;        // Deactivate SPI chip select
+            if(start_write_delay) begin
+                if (writedelay_counter > 0) begin
+                writedelay_counter <= writedelay_counter - 1;
+                end 
+                else begin
+                    start_write_delay <= 1'b0;
+                end
+            end
+
         end
     end
 endmodule
