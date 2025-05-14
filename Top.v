@@ -29,7 +29,6 @@ module top (
     output [7:0] DATA_BUS_TEST,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
-    input	 i_Q,		// Phase signal from 6809
     input    i_E,       // E clock signal from 6809
     output	 o_WE,		// SRAM Write Enable
     output	 o_RE,		//SRAM Read Enable
@@ -43,6 +42,7 @@ module top (
     output	 o_ABUS_OE,	// Enable Bidirectional Voltage-Level Translator Address Bus
     output	 o_MRDY,	// driving MRDY low indicates that "memory is not ready". The 6809 will then stretch the E and Q clocks by multiples of a quarter period. If a peripheral needs to be accessed that happens to be slow, the CPU effectively stalls until the peripheral is ready
     output   o_DBEN,
+    output	 o_HALT,	// Assert HALT active low signal to 6809
     // FT2232 SPI Interface used to write a ROM file to flash connected to FPGA
     input	 i_FT_SCK,	// SPI Clock from FT2232
     input	 i_FT_MOSI,	// Master Out, Slave In (FT2232 to FPGA)
@@ -148,8 +148,7 @@ module top (
         .spi_ce(spi_ce),
         .reset(i_RESET),
         .i_enable(E_LongDelay),
-        .i_Q(i_Q),
-        .i_ADDRESS_BUS(i_ADDRESS_BUS),
+         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
         .i_RW(i_RW),
         .clk(clk_8mhz),
@@ -159,6 +158,7 @@ module top (
         .o_SPI_CS(spi_cs_ctrl),
         .o_spi_data(spi_data),
         .o_MemoryReady(memory_ready),
+        .o_HALT(o_HALT),
         .spi_datawrite(dbusData)
     );
 
