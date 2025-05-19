@@ -81,6 +81,7 @@ module top (
     wire spi_mosi_ctrl;
     wire spi_cs_ctrl;
     wire memory_ready;
+    wire halt;
 	wire [7:0] spi_data;
     wire [7:0] dbusData;
     wire [7:0] uart_txdata;
@@ -158,7 +159,7 @@ module top (
         .o_SPI_CS(spi_cs_ctrl),
         .o_spi_data(spi_data),
         .o_MemoryReady(memory_ready),
-        .o_HALT(o_HALT),
+        .o_HALT(halt),
         .spi_datawrite(dbusData)
     );
 
@@ -217,7 +218,7 @@ module top (
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
     assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay) ? 1'b0 : 1'b1;
-
+    assign o_HALT = halt;
   
     // Multiplexer to choose the active SPI clock driver
     assign o_SPI_CLK = i_FT_CS ? spi_clk_ctrl : spi_clk_writer;

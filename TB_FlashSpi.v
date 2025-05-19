@@ -13,15 +13,14 @@ module tb_spi_flash_controller;
     wire o_SPI_CS;
     wire [7:0] o_DATA;
     wire o_MemoryReady;
+    wire o_HALT;
     reg i_enable;
-    reg i_Q;
 
     // Instantiate the Unit Under Test (UUT)
     spi_flash_controller uut (
         .spi_ce(spi_ce),
         .reset(reset),
         .i_enable(i_enable),
-        .i_Q(i_Q),
         .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(i_DataBus),
         .i_RW(i_RW),
@@ -31,7 +30,8 @@ module tb_spi_flash_controller;
         .o_SPI_MOSI(o_SPI_MOSI),
         .o_SPI_CS(o_SPI_CS),
         .o_spi_data(o_DATA),
-        .o_MemoryReady(o_MemoryReady)
+        .o_MemoryReady(o_MemoryReady),
+        .o_HALT(o_HALT)
     );
 
     // Clock generation at 88.67 MHz 
@@ -42,17 +42,19 @@ module tb_spi_flash_controller;
     // Simulation task for SPI flash read operation
     task spi_flash_read(input [15:0] address);
         begin
-            reset = 1;
-            #10;
-            reset = 0;
-            #10;
-            reset = 1;
             #24;
             spi_ce = 1;
             i_ADDRESS_BUS = address;
-            i_Q = 1;
+            i_RW = 1;  // Read operation
+            #10;
             i_enable = 1;
-            i_RW = 1;  // Read operatio
+            #10;
+            i_enable = 0;
+            spi_ce = 0;
+            #10;
+            i_enable = 1;
+            #10;
+            i_enable = 0;
             #774;  // Wait for SPI operation to begin
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 1;
@@ -62,33 +64,33 @@ module tb_spi_flash_controller;
             #24 i_SPI_MISO = 0;
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 0;
-            spi_ce = 0;
             i_RW = 1;
-            i_Q = 1;
-            i_enable = 1;
-            #100;  // Return to idle state after operation
         end
     endtask
     // Simulation task for SPI flash read operation
     task spi_flash_write(input [15:0] address, input [7:0] databus);
         begin
-
-
             #24;
             #24;
             #24;
             i_RW = 0;
             spi_ce = 1;
+            #10;
+            i_enable = 1;
             i_ADDRESS_BUS = address;
             i_DataBus = databus;
-            i_Q = 1;
-            i_enable = 1;
-            #1150;  // Wait for SPI operation to begin
-            i_Q = 0;
+            #10;
             i_enable = 0;
+
+            #10;
+            i_enable = 1;
             spi_ce = 0;
             i_RW = 1;
-            #100;  // Return to idle state after operation
+            #10;
+            i_enable = 0;
+            #3550;  // Wait for SPI operation to begin
+
+           // #15000;  // Return to idle state after operation
         end
     endtask
 
@@ -100,20 +102,19 @@ module tb_spi_flash_controller;
         spi_ce = 0;
         i_ADDRESS_BUS = 16'h0000;
         i_RW = 1;
-
+        reset = 1;
+        #10;
+        reset = 0;
+        #10;
+        reset = 1;
         i_DataBus = 8'h00; // Default value to prevent high-Z
-
-
         // Reset SPI Controller signals
         #100;
-
         // Stimulate SPI flash read for address 0x1234
         spi_flash_read(16'h3AAA);
-
+        #100;  // Return to idle state after operation
         $display("Final SPI Data Received: %h", o_DATA);
         // Initialize Inputs
-        spi_ce = 0;
-        i_RW = 1;
         spi_flash_write(16'h3000, 8'hAA);
         $finish;
     end
