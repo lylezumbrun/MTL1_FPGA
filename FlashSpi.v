@@ -29,7 +29,8 @@ module spi_flash_controller (
     reg spi_write_active = 0;               // Indicates SPI write enable operation is active
     reg start_write_delay = 0;
     reg spi_page_active = 0;               // Indicates SPI page operation is active
-    reg clock_delay = 0;
+    reg read_clock_delay = 0;
+    reg write_clock_delay = 0;
     reg start_write = 0;
     reg start_read = 0;
     // SPI flash controller logic
@@ -72,13 +73,13 @@ module spi_flash_controller (
         if (start_read && reset) begin
             spi_read_active <= 1'b1;         // Mark SPI as active
             bit_counter <= 6'd0;        // Reset bit counter
-            clock_delay <= 1'b0;
+            read_clock_delay <= 1'b0;
        end
-       if (start_write && !spi_write_active && !spi_page_active && !spi_read_active && reset) begin
+       if (start_write && !spi_write_active && !spi_page_active && reset) begin
             spi_write_active <= 1'b1;         // Mark write enable as active
             spi_page_active <= 1'b0;         // Mark page as inactive
             bit_counter <= 6'd0;        // Reset bit counter
-            clock_delay <= 1'b0;
+            write_clock_delay <= 1'b0;
         end
 
         
@@ -92,10 +93,10 @@ module spi_flash_controller (
                 o_SPI_CS <= 1'b0;           // Activate SPI chip select
                 o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
 
-                if (clock_delay) begin 
+                if (read_clock_delay) begin 
                     o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
                 end
-                clock_delay <= 1'b1;
+                read_clock_delay <= 1'b1;
 
                 if (~o_SPI_CLK) begin
                     // On rising edge of SPI clock, handle data transfer
@@ -124,10 +125,10 @@ module spi_flash_controller (
         // Enable Write data to SPI flash
         if (spi_write_active && !spi_page_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
-            if (clock_delay) begin 
+            if (write_clock_delay) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
             end
-            clock_delay <= 1'b1;
+            write_clock_delay <= 1'b1;
 
             if (~o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
@@ -141,8 +142,8 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_page_active <= 1'b1;      // Mark SPI page active
                     bit_counter <= 6'd0;        // Reset bit counter
-                    clock_delay <= 1'b0;
-                    o_SPI_CS <= 1'b1;           // Deactivate SPI chip select
+                    write_clock_delay <= 1'b0;
+                    o_SPI_CS <= 1'b0;           // Deactivate SPI chip select
                     o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
                 end
                 // Increment bit counter (always within 6-bit range, safe to truncate)
@@ -155,10 +156,10 @@ module spi_flash_controller (
         if (spi_page_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
            
-            if (clock_delay) begin 
+            if (write_clock_delay) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
             end
-            clock_delay <= 1'b1;
+            write_clock_delay <= 1'b1;
 
             if (~o_SPI_CLK) begin
                 // On rising edge of SPI clock, handle data transfer
@@ -180,7 +181,7 @@ module spi_flash_controller (
                     spi_write_active <= 1'b0;      // Delay finished for write. 
                     writedelay_counter <= 16'd100;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
                     start_write_delay <= 1'b1;
-                    o_SPI_CS <= 1'b0;           // Activate SPI chip select
+                    o_SPI_CS <= 1'b1;           // Activate SPI chip select
                 end
             end
             else begin

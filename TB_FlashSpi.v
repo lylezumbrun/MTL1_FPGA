@@ -119,7 +119,7 @@ module tb_spi_flash_controller;
         $display("Final SPI Data Received: %h", o_DATA);
         //Initialize Inputs
         spi_flash_write(16'h3000, 8'hAA);
-        #800;  // Wait for SPI operation to begin
+        #1000;  // Wait for SPI operation to begin
         spi_flash_reread(16'h3AAA);
         #2550;  // Wait for SPI operation to begin
         $finish;
