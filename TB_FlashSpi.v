@@ -61,12 +61,13 @@ module tb_spi_flash_controller;
             #24 i_SPI_MISO = 0;
         end
     endtask
-        task spi_flash_reread(input [15:0] address);
-        begin
-            #24;
+    task spi_flash_reread(input [15:0] address);
+    begin
             spi_ce = 1;
             i_ADDRESS_BUS = address;
-            i_RW = 1;  // Read operation   
+            i_RW = 1;  // Read operation
+            #24
+            spi_ce = 0;   
             #774;  // Wait for SPI operation to begin
             #24 i_SPI_MISO = 1;
             #24 i_SPI_MISO = 1;
@@ -81,6 +82,9 @@ module tb_spi_flash_controller;
     // Simulation task for SPI flash read operation
     task spi_flash_write(input [15:0] address, input [7:0] databus);
         begin
+            #24;
+            #24;
+            #24;
             #24;
             #24;
             #24;
@@ -115,7 +119,7 @@ module tb_spi_flash_controller;
         $display("Final SPI Data Received: %h", o_DATA);
         //Initialize Inputs
         spi_flash_write(16'h3000, 8'hAA);
-        #1000;  // Wait for SPI operation to begin
+        #800;  // Wait for SPI operation to begin
         spi_flash_reread(16'h3AAA);
         #2550;  // Wait for SPI operation to begin
         $finish;

@@ -36,7 +36,7 @@ module spi_flash_controller (
     // Reset logic
 
     always @(negedge i_enable) begin
-        if (!i_RW && spi_ce) begin
+        if (!i_RW && spi_ce && !spi_write_active) begin
             spi_writeaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             start_write <= 1'b1;
             spi_datawrite <= i_DataBus;
@@ -47,7 +47,7 @@ module spi_flash_controller (
     end
 
     always @(posedge i_enable) begin
-        if (i_RW && spi_ce) begin
+        if (i_RW && spi_ce && !spi_read_active) begin
             spi_readaddress <= {12'b0, i_ADDRESS_BUS[11:0]}; // Lower 12 bits of address to 24-bit SPI address
             start_read <= 1'b1;
         end
@@ -69,19 +69,12 @@ module spi_flash_controller (
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
-        if (start_read && !spi_read_active && reset) begin
-            if(spi_write_active || start_write_delay) begin
-               o_HALT <= 1'b0;         // Activate HALT signal
-            end
-            else begin
-                spi_read_active <= 1'b1;         // Mark SPI as active
-                bit_counter <= 6'd0;        // Reset bit counter
-                clock_delay <= 1'b0;
-                o_HALT <= 1'b1;         // Deactivate HALT signal
-            end
-
+        if (start_read && reset) begin
+            spi_read_active <= 1'b1;         // Mark SPI as active
+            bit_counter <= 6'd0;        // Reset bit counter
+            clock_delay <= 1'b0;
        end
-       else if (start_write && !spi_write_active && !spi_page_active && !spi_read_active && reset) begin
+       if (start_write && !spi_write_active && !spi_page_active && !spi_read_active && reset) begin
             spi_write_active <= 1'b1;         // Mark write enable as active
             spi_page_active <= 1'b0;         // Mark page as inactive
             bit_counter <= 6'd0;        // Reset bit counter
@@ -91,39 +84,45 @@ module spi_flash_controller (
         
         // Read data from SPI flash
         if (spi_read_active && reset) begin
-            o_SPI_CS <= 1'b0;           // Activate SPI chip select
-            o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
-
-            if (clock_delay) begin 
-                o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
-            end
-            clock_delay <= 1'b1;
-
-            if (~o_SPI_CLK) begin
-                // On rising edge of SPI clock, handle data transfer
-                if (bit_counter < 6'd8) begin //7
-                    // Send SPI command (8 bits)
-                    o_SPI_MOSI <= spi_read_command[7 - bit_counter];
-                end else if (bit_counter < 6'd32) begin
-                    // Send 24-bit SPI address (address starts at bit 8)
-                    o_SPI_MOSI <= spi_readaddress[31 - bit_counter];
-                end else if (bit_counter == 6'd40) begin
-                    // End of SPI transaction
-                    spi_read_active <= 1'b0;      // Mark SPI as inactive
-                    o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
-                end
+            if(spi_write_active || start_write_delay) begin
+               o_HALT <= 1'b0;         // Activate HALT signal
             end
             else begin
-                if (bit_counter < 6'd40) begin
-                    // Receive 8-bit data (after address)
-                    o_spi_data[7 - (bit_counter - 6'd32)] <= i_SPI_MISO;
+                o_HALT <= 1'b1;         // Deactivate HALT signal
+                o_SPI_CS <= 1'b0;           // Activate SPI chip select
+                o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
+
+                if (clock_delay) begin 
+                    o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
                 end
-                // Increment bit counter (always within 6-bit range, safe to truncate)
-                bit_counter <= bit_counter + 1;
+                clock_delay <= 1'b1;
+
+                if (~o_SPI_CLK) begin
+                    // On rising edge of SPI clock, handle data transfer
+                    if (bit_counter < 6'd8) begin //7
+                        // Send SPI command (8 bits)
+                        o_SPI_MOSI <= spi_read_command[7 - bit_counter];
+                    end else if (bit_counter < 6'd32) begin
+                        // Send 24-bit SPI address (address starts at bit 8)
+                        o_SPI_MOSI <= spi_readaddress[31 - bit_counter];
+                    end else if (bit_counter == 6'd40) begin
+                        // End of SPI transaction
+                        spi_read_active <= 1'b0;      // Mark SPI as inactive
+                        o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
+                    end
+                end
+                else begin
+                    if (bit_counter < 6'd40) begin
+                        // Receive 8-bit data (after address)
+                        o_spi_data[7 - (bit_counter - 6'd32)] <= i_SPI_MISO;
+                    end
+                    // Increment bit counter (always within 6-bit range, safe to truncate)
+                    bit_counter <= bit_counter + 1;
+                end
             end
         end 
         // Enable Write data to SPI flash
-        else if (spi_write_active && !spi_page_active && reset) begin
+        if (spi_write_active && !spi_page_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
             if (clock_delay) begin 
                 o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
@@ -153,7 +152,7 @@ module spi_flash_controller (
             end
         end
         // Write data to SPI flash
-        else if (spi_page_active && reset) begin
+        if (spi_page_active && reset) begin
             o_SPI_CS <= 1'b0;           // Activate SPI chip select
            
             if (clock_delay) begin 
@@ -179,8 +178,9 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_page_active <= 1'b0;      // Mark SPI as inactive
                     spi_write_active <= 1'b0;      // Delay finished for write. 
-                    writedelay_counter <= 16'd48000;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
+                    writedelay_counter <= 16'd100;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
                     start_write_delay <= 1'b1;
+                    o_SPI_CS <= 1'b0;           // Activate SPI chip select
                 end
             end
             else begin
@@ -188,21 +188,20 @@ module spi_flash_controller (
                 bit_counter <= bit_counter + 1;
             end
         end 
-        else begin
+        if(!spi_read_active && !spi_write_active) begin
             // Idle state: set SPI signals to default
             o_SPI_MOSI <= 1'bz;        // High Impedance at idle
             o_SPI_CLK <= 1'b0;         // Clock low in idle (for SPI Mode 0)
             o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
             o_SPI_CS <= 1'b1;        // Deactivate SPI chip select
-            if(start_write_delay) begin
+        end
+        if(start_write_delay) begin
                 if (writedelay_counter > 0) begin
                 writedelay_counter <= writedelay_counter - 1; // count down to zero for delay
                 end 
                 else begin
                     start_write_delay <= 1'b0;
                 end
-            end
-
         end
     end
 endmodule
