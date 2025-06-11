@@ -112,6 +112,7 @@ module spi_flash_controller (
                         // End of SPI transaction
                         spi_read_active <= 1'b0;      // Mark SPI as inactive
                         o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
+                        read_clock_delay <= 1'b0;
                     end
                 end
                 else begin
@@ -183,7 +184,7 @@ module spi_flash_controller (
                     spi_write_active <= 1'b0;      // Delay finished for write. 
                     writedelay_counter <= 16'd100;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
                     start_write_delay <= 1'b1;
-                    o_SPI_CS <= 1'b1;          // Deactivate SPI chip select
+                    //o_SPI_CS <= 1'b1;          // Deactivate SPI chip select
                 end
             end
             else begin
@@ -191,7 +192,7 @@ module spi_flash_controller (
                 write_bit_counter <= write_bit_counter + 1;
             end
         end 
-        if(!spi_read_active && !spi_write_active) begin
+        if(!spi_read_active && !spi_write_active || start_write_delay) begin
             // Idle state: set SPI signals to default
             o_SPI_MOSI <= 1'bz;        // High Impedance at idle
             o_SPI_CLK = 1'b0;         // Clock low in idle (for SPI Mode 0)
