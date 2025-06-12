@@ -69,6 +69,8 @@ module spi_flash_controller (
             spi_page_active <= 1'b0;        // Reset SPI page active flag
             o_MemoryReady <= 1'b1;    // Allow the 6809 to continue
             o_HALT <= 1'b1;         // Deactivate HALT signal
+            start_write_delay <= 1'b0; // Reset write delay flag
+            writedelay_counter <= 16'd0;
         end
 
         // Start SPI transaction when chip select is active and it's a read cycle
@@ -93,12 +95,12 @@ module spi_flash_controller (
             else begin
                 o_HALT <= 1'b1;         // Deactivate HALT signal
                 o_SPI_CS <= 1'b0;           // Activate SPI chip select
-                o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
 
                 if (read_clock_delay) begin 
                     o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
                 end
                 read_clock_delay <= 1'b1;
+                o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
 
                 if (~o_SPI_CLK) begin
                     // On rising edge of SPI clock, handle data transfer
@@ -182,7 +184,7 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_page_active <= 1'b0;      // Mark SPI as inactive
                     spi_write_active <= 1'b0;      // Delay finished for write. 
-                    writedelay_counter <= 16'd100;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
+                    writedelay_counter <= 16'd48000;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
                     start_write_delay <= 1'b1;
                     //o_SPI_CS <= 1'b1;          // Deactivate SPI chip select
                 end
@@ -196,7 +198,6 @@ module spi_flash_controller (
             // Idle state: set SPI signals to default
             o_SPI_MOSI <= 1'bz;        // High Impedance at idle
             o_SPI_CLK = 1'b0;         // Clock low in idle (for SPI Mode 0)
-            o_MemoryReady <= 1'b1;     // Allow the 6809 to continue
             o_SPI_CS <= 1'b1;        // Deactivate SPI chip select
         end
         if(start_write_delay) begin
