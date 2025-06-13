@@ -182,7 +182,7 @@ module spi_flash_controller (
                     // End of SPI transaction
                     spi_page_active <= 1'b0;      // Mark SPI as inactive
                     spi_write_active <= 1'b0;      // Delay finished for write. 
-                    writedelay_counter <= 16'd100;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
+                    writedelay_counter <= 16'd65000;  // Set counter for 6ms @ 8MHz max time for write on a 25LC1024 eeprom, changed to 48000 to 100 for test.
                     start_write_delay <= 1'b1;
                 end
             end
