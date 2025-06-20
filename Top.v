@@ -217,7 +217,9 @@ module top (
     assign input_uart_control = (uart_control_ce && !i_RW) ? DATA_BUS : 8'bz;
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
-    assign o_DBEN = (spi_ce && memory_ready && o_HALT && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay) ? 1'b0 : 1'b1;
+    
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay) ? 1'b0 : 1'b1;
+    
     assign o_HALT = halt;
   
     // Multiplexer to choose the active SPI clock driver
