@@ -14,8 +14,7 @@ module spi_flash_controller (
     output reg o_SPI_CS,      // SPI Chip Select (active low)
     output reg [7:0] o_spi_data,  // Data output to 6809
     output reg o_MemoryReady,
-    output reg o_HALT,
-    output reg [7:0] spi_datawrite          // Data to write to SPI flash
+    output reg o_HALT
 );
 
     wire [7:0] spi_read_command = 8'h03; // Command for SPI flash (READ command is 0x03)
@@ -26,6 +25,7 @@ module spi_flash_controller (
     reg [5:0] read_bit_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg [5:0] write_bit_counter = 6'd0;     // Tracks SPI transaction progress (6 bits to cover up to 40)
     reg [15:0] writedelay_counter = 0;
+    reg [7:0] spi_datawrite;          // Data to write to SPI flash
     reg spi_read_active = 0;               // Indicates SPI read operation is active
     reg spi_write_active = 0;               // Indicates SPI write enable operation is active
     reg start_write_delay = 0;
@@ -87,16 +87,12 @@ module spi_flash_controller (
         
         // Read data from SPI flash
         if (spi_read_active && reset) begin
-            if(spi_write_active || start_write_delay) begin
-               o_HALT <= 1'b0;         // Activate HALT signal
-            end
-            else begin
-                o_HALT <= 1'b1;         // Deactivate HALT signal
                 o_SPI_CS <= 1'b0;           // Activate SPI chip select
                 o_MemoryReady <= 1'b0;     // Keep 6809 in wait state during SPI transaction
 
                 if (read_clock_delay) begin 
                     o_SPI_CLK = ~o_SPI_CLK;   // Toggle SPI clock
+                    o_HALT <= 1'b1;         // Activate HALT signal
                 end
                 read_clock_delay <= 1'b1;
 
@@ -123,7 +119,6 @@ module spi_flash_controller (
                     // Increment bit counter (always within 6-bit range, safe to truncate)
                     read_bit_counter <= read_bit_counter + 1;
                 end
-            end
         end 
         // Enable Write data to SPI flash
         if (spi_write_active && !spi_page_active && reset) begin
@@ -201,9 +196,11 @@ module spi_flash_controller (
         if(start_write_delay) begin
                 if (writedelay_counter > 0) begin
                 writedelay_counter <= writedelay_counter - 1; // count down to zero for delay
+                o_HALT <= 1'b0;         // Activate HALT signal
                 end 
                 else begin
                     start_write_delay <= 1'b0;
+                    o_HALT <= 1'b1;         // deactivate HALT signal
                 end
         end
     end

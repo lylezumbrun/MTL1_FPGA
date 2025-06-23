@@ -83,7 +83,6 @@ module top (
     wire memory_ready;
     wire halt;
 	wire [7:0] spi_data;
-    wire [7:0] dbusData;
     wire [7:0] uart_txdata;
     wire [7:0] uart_rxdata;
     wire [7:0] uart_status;
@@ -149,7 +148,7 @@ module top (
         .spi_ce(spi_ce),
         .reset(i_RESET),
         .i_enable(E_LongDelay),
-         .i_ADDRESS_BUS(i_ADDRESS_BUS),
+        .i_ADDRESS_BUS(i_ADDRESS_BUS),
         .i_DataBus(DATA_BUS),
         .i_RW(i_RW),
         .clk(clk_8mhz),
@@ -159,8 +158,7 @@ module top (
         .o_SPI_CS(spi_cs_ctrl),
         .o_spi_data(spi_data),
         .o_MemoryReady(memory_ready),
-        .o_HALT(halt),
-        .spi_datawrite(dbusData)
+        .o_HALT(halt)
     );
 
     spi_flash_writer spi_writer (
