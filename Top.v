@@ -93,6 +93,8 @@ module top (
     wire pll_locked;
     wire E_LongDelay;
     wire E_ShortDelay;
+    wire E_SramLongDelay;
+    wire E_SramShortDelay;
 
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -117,7 +119,9 @@ module top (
         .i_e_clk(i_E),
         .i_reset(i_RESET),
         .o_e_longdelay(E_LongDelay),
-        .o_e_shortdelay(E_ShortDelay)
+        .o_e_shortdelay(E_ShortDelay),
+        .o_e_sramlongdelay(E_SramLongDelay),
+        .o_e_sramshortdelay(E_SramShortDelay)
     );
     
     address_decoder addr_dec (
@@ -135,7 +139,7 @@ module top (
     sram_controller sram_ctrl (
         .sram_ce(sram_ce),
         .i_RW(i_RW),
-        .i_enable(E_LongDelay),
+        .i_enable(E_SramLongDelay),
         .o_WE(o_WE),
         .o_RE(o_RE),
         .o_CE(o_CE),
@@ -216,7 +220,7 @@ module top (
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
     
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_SramShortDelay) ? 1'b0 : 1'b1;
     
     assign o_HALT = halt;
   
