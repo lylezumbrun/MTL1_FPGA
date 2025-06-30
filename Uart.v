@@ -16,7 +16,8 @@ module uart_interface (
     );
 
     // Parameters
-    parameter CLOCK_DIVISOR = 9236; // 9236 Divisor for 9600 bps with 88.67 MHz clock
+    parameter CLOCK_DIVISOR = 52; // Baud clock toggle every 52 cycles (effective 104-cycle period) for 9600 bps @ 8 MHz
+
     localparam RXIDLE = 1'b0, RECEIVE = 1'b1; // UART RX states
     localparam TXIDLE = 1'b0, TRANSMIT = 1'b1; // UART TX states
 

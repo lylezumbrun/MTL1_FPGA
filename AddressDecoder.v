@@ -11,10 +11,10 @@ module address_decoder (
     // Memory expansion area 0x1000 - 0x7FFF
     // Defined address ranges for SRAM
     parameter SRAM_START = 16'h1000;
-    parameter SRAM_END = 16'h1FFF;   // SRAM range: 0x1000 to 0x1FFF (4KB)
+    parameter SRAM_END = 16'h2FFF;   // SRAM range: 0x1000 to 0x2FFF (8KB)
     // Defined address ranges for ROM
     parameter FLASH_START = 16'h3000; // Starting address for SPI flash (0x3000)
-    parameter FLASH_END = 16'h3FFF;   // Ending address for SPI flash (0x3FFF)
+    parameter FLASH_END = 16'h7FFF;   // Ending address for SPI flash (0x7FFF) (20KB)
 
 
 

@@ -3,7 +3,7 @@
     reg i_RW;
     reg i_uart_data_ce;
     reg i_uart_control_ce; 
-    reg clk;                  // System clock (44.33 MHz)
+    reg clk;                  // System clock (8MHz)
     reg reset;                // System reset
     reg i_UART_TX;            // FT2232 TX line (serial data from host)
     reg [7:0] i_control;      // reg to Control register
@@ -15,8 +15,8 @@
     wire [7:0] o_control; // output the control register
     wire o_IRQ;      // Active-low interrupt signal to 6809
 
-    // Clock generation at 88.67 MHz 
-    localparam CLOCK_PERIOD_NS = 11.285; // 88.67 MHz 
+    // Clock generation at 8 MHz 
+    localparam CLOCK_PERIOD_NS = 125; // 8 MHz 
     initial clk = 0;
     always #(CLOCK_PERIOD_NS / 2) clk = ~clk;
 
@@ -25,7 +25,7 @@ uart_interface uut(
     .i_RW(i_RW),
     .i_uart_data_ce(i_uart_data_ce),
     .i_uart_control_ce(i_uart_control_ce), 
-    .clk(clk),                  // System clock (44.33 MHz)
+    .clk(clk),                  // System clock (8 MHz)
     .reset(reset),                // System reset
     .i_UART_TX(i_UART_TX),            // FT2232 TX line (serial data from host)
     .i_control(i_control),      // .to Control register

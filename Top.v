@@ -5,8 +5,12 @@ Copyright Lyle Zumbrun 2025
 
 MTL-1 Predefined Memory Range
 -----------------------------------
-SRAM range: 0x0000 to 0x0FFF (4KB)
-ROM (SPI flash) 0xF000 to 0xFFFF
+On Board SRAM range: 0x0000 to 0x0FFF (4KB)
+*External SRAM (SRAM) 0x1000 to 0x2FFF (8KB)
+*ROM (SPI flash) 0x3000 to 0x7FFF (20KB)
+ON Board ROM 0xF000 to 0xFFFF (4KB)
+
+* FPGA Controlled Memory
 
 Optional Address area for additional I/O or memory
 -----------------------------------------------
