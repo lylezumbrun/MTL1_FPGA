@@ -224,7 +224,7 @@ module top (
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
     
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_SramShortDelay) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay && !i_RW || sram_ce && E_LongDelay && i_RW) ? 1'b0 : 1'b1;
     
     assign o_HALT = halt;
   

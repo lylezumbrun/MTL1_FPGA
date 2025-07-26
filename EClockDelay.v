@@ -23,7 +23,7 @@ module e_clk_delay (
             o_e_longdelay <= 1;
             o_e_sramlongdelay <= 1;
            
-            if (start_counter < 6'd44) begin
+            if (start_counter < 6'd44) begin // 44 cycles = 440ns @ 100MHz
                 o_e_shortdelay <= 0; // Enable short delay buffer
                 o_e_sramshortdelay <= 0; // Enable short delay buffer
                 start_counter <= start_counter + 1;
@@ -54,6 +54,7 @@ module e_clk_delay (
             if (counter <= 3'd2) begin
                 o_e_longdelay <= 0; // Disable buffer (OE low = inactive)
                 o_e_shortdelay <= 0; // Disable buffer (OE low = inactive)
+
             end
             if(counter > 0) begin
                 counter <= counter - 1;
