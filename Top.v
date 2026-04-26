@@ -6,7 +6,6 @@ Copyright Lyle Zumbrun 2025
 MTL-1 Predefined Memory Range
 -----------------------------------
 On Board SRAM range: 0x0000 to 0x0FFF (4KB)
-*External SRAM (SRAM) 0x1000 to 0x2FFF (8KB)
 *ROM (SPI flash) 0x3000 to 0x7FFF (20KB)
 ON Board ROM 0xF000 to 0xFFFF (4KB)
 
@@ -30,19 +29,14 @@ output	 o_DBEN,	// Assert low to force 6809 disconnect from databus to high impe
 module top (
     // MTL1 6809 interface
     inout [7:0]	 DATA_BUS,	// 8-bit bidirectional data bus
-    output [7:0] DATA_BUS_TEST,	// 8-bit bidirectional data bus
     input [15:0] i_ADDRESS_BUS,	// 16-bit address bus
     input	 i_RW,		// Read/Write control signal from 6809
     input    i_E,       // E clock signal from 6809
-    output	 o_WE,		// SRAM Write Enable
-    output	 o_RE,		//SRAM Read Enable
-    output	 o_CE,		// SRAM Chip enable active low
-    output	 o_CE2,		// SRAM Chip Enable active high
+    output	 o_DBUS_RW,// 8-Bit Dual-Supply Bus Transceiver direction control, 0 for write (6809 to FPGA), 1 for read (FPGA to 6809)
     input	 i_RESET,	// RESET signal
     output	 o_IRQ,		// Assert a interrupt to 6809
     output	 o_CONTROL2_OE,	// Enable Bidirectional Voltage-Level Translator for IRQ, FIRQ, RESET, HALT Signals
     output	 o_CONTROL1_OE,	// Enable Bidirectional Voltage-Level Translator for DBEN, Q, BS, MRDY, DMA, R/W, E, BA
-    output	 o_DBUS_OE,	// Enable Bidirectional Voltage-Level Translator for Data bus
     output	 o_ABUS_OE,	// Enable Bidirectional Voltage-Level Translator Address Bus
     output	 o_MRDY,	// driving MRDY low indicates that "memory is not ready". The 6809 will then stretch the E and Q clocks by multiples of a quarter period. If a peripheral needs to be accessed that happens to be slow, the CPU effectively stalls until the peripheral is ready
     output   o_DBEN,
@@ -132,23 +126,12 @@ module top (
         .i_FT_CS(i_FT_CS),
         .i_reset(i_RESET),
         .address(i_ADDRESS_BUS),
-        .sram_ce(sram_ce),
         .spi_ce(spi_ce),
         .uart_data_ce(uart_data_ce),
         .uart_status_ce(uart_status_ce),
         .uart_control_ce(uart_control_ce)
     );
 
-    // SRAM Controller (activated by sram_ce)
-    sram_controller sram_ctrl (
-        .sram_ce(sram_ce),
-        .i_RW(i_RW),
-        .i_enable(E_SramLongDelay),
-        .o_WE(o_WE),
-        .o_RE(o_RE),
-        .o_CE(o_CE),
-        .o_CE2(o_CE2)
-    );
 
     // SPI Master for Flash (activated by spi_ce)
     // SPI Flash Controller
@@ -201,16 +184,14 @@ module top (
     assign o_CONTROL2_OE = 1'b1; 
     assign o_CONTROL1_OE = 1'b1;
     assign o_ABUS_OE = 1'b1;
-    assign o_DBUS_OE = 1'b1;
 
 
-    assign DATA_BUS_TEST = DATA_BUS;
     assign o_SPI_CLK_M = spi_clk_ctrl;
     assign o_SPI_MOSI_M = spi_mosi_ctrl;
     assign o_SPI_CS_M = spi_cs_ctrl;
     assign i_SPI_MISO_M = i_SPI_MISO;
 
-    assign o_RW = i_RW;
+    assign o_DBUS_RW = i_RW;
     assign o_SPI_CE = spi_ce;
     assign o_E = E_LongDelay;
 
@@ -224,7 +205,7 @@ module top (
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
     
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce || sram_ce && E_ShortDelay && !i_RW || sram_ce && E_LongDelay && i_RW) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce) ? 1'b0 : 1'b1;
     
     assign o_HALT = halt;
   

@@ -2,16 +2,12 @@ module address_decoder (
     input i_FT_CS,
     input i_reset,
     input [15:0] address,     // 16-bit address bus from 6809
-    output reg sram_ce,       // SRAM chip enable
     output reg spi_ce,         // SPI flash chip select
     output reg uart_data_ce,
     output reg uart_status_ce,
     output reg uart_control_ce
 );
-    // Memory expansion area 0x1000 - 0x7FFF
-    // Defined address ranges for SRAM
-    parameter SRAM_START = 16'h1000;
-    parameter SRAM_END = 16'h2FFF;   // SRAM range: 0x1000 to 0x2FFF (8KB)
+
     // Defined address ranges for ROM
     parameter FLASH_START = 16'h3000; // Starting address for SPI flash (0x3000)
     parameter FLASH_END = 16'h7FFF;   // Ending address for SPI flash (0x7FFF) (20KB)
@@ -29,16 +25,10 @@ module address_decoder (
     // Decoder logic
     always @(*) begin
         // Default values
-        sram_ce = 1'b0;  // Deactivate SRAM by default
         spi_ce = 1'b0;   // Deactivate SPI Flash by default
         uart_data_ce = 1'b0;
         uart_status_ce = 1'b0;
         uart_control_ce = 1'b0;
-
-        // Check if address is in SRAM range
-        if (address >= SRAM_START && address <= SRAM_END && i_reset) begin
-            sram_ce = 1'b1;   // Activate SRAM chip enable
-        end
 
         // Check if address is in SPI Flash range and that FT2232 is not active low on the chip select, if active low then its controling the flash chip.
         if (address >= FLASH_START && address <= FLASH_END && i_FT_CS && i_reset) begin
