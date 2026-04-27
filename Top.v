@@ -62,7 +62,6 @@ module top (
     output	 o_SPI_CS_M,
     output	 i_SPI_MISO_M,
     output   o_SPI_CE,
-    output   o_RW,
     output   o_E
 );
 
@@ -91,8 +90,6 @@ module top (
     wire pll_locked;
     wire E_LongDelay;
     wire E_ShortDelay;
-    wire E_SramLongDelay;
-    wire E_SramShortDelay;
 
 	   // Instantiate the internal oscillator
     OSCH #(
@@ -117,9 +114,7 @@ module top (
         .i_e_clk(i_E),
         .i_reset(i_RESET),
         .o_e_longdelay(E_LongDelay),
-        .o_e_shortdelay(E_ShortDelay),
-        .o_e_sramlongdelay(E_SramLongDelay),
-        .o_e_sramshortdelay(E_SramShortDelay)
+        .o_e_shortdelay(E_ShortDelay)
     );
     
     address_decoder addr_dec (
