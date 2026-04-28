@@ -12,10 +12,6 @@ module address_decoder (
     parameter FLASH_START = 16'h3000; // Starting address for SPI flash (0x3000)
     parameter FLASH_END = 16'h7FFF;   // Ending address for SPI flash (0x7FFF) (20KB)
 
-
-
-
-
     // Defined addresses for UART I/O
     parameter UART_DATA = 16'hA000; // Register for sending and receive UART data
     parameter UART_STATUS = 16'hA001; // UART Status Register
