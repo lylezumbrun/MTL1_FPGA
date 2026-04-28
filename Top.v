@@ -61,7 +61,8 @@ module top (
     output	 o_SPI_MOSI_M,
     output	 o_SPI_CS_M,
     output	 i_SPI_MISO_M,
-    output   o_SPI_CE
+    output   o_SPI_CE,
+    output   o_E
 );
 
 	wire clk_internal;
@@ -112,6 +113,7 @@ module top (
         .i_clk(clk_100mhz),
         .i_e_clk(i_E),
         .i_reset(i_RESET),
+        .o_e_longdelay(E_LongDelay),
         .o_e_shortdelay(E_ShortDelay)
     );
     
@@ -186,6 +188,7 @@ module top (
 
     assign o_DBUS_RW = i_RW;
     assign o_SPI_CE = spi_ce;
+    assign o_E = E_LongDelay;
 
 
     // Data Bus Handling
@@ -197,7 +200,7 @@ module top (
     assign DATA_BUS = (uart_control_ce && i_RW) ? output_uart_control : 8'bz;
     assign o_MRDY =  memory_ready; 
     
-    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce && E_ShortDelay) ? 1'b0 : 1'b1;
+    assign o_DBEN = (spi_ce && memory_ready && i_RW || spi_ce && E_ShortDelay && !i_RW  || uart_control_ce) ? 1'b0 : 1'b1;
     
     assign o_HALT = halt;
   

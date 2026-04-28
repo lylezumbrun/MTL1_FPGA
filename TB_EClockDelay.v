@@ -7,12 +7,14 @@ module EClockDelayTB;
     reg i_e_clk;        // 6809 E clock
 
     // Outputs
+    wire o_e_longdelay;   // Long delay output
     wire o_e_shortdelay;  // Short delay output
 
     // Instantiate the Unit Under Test (UUT)
     e_clk_delay uut (
         .i_clk(i_clk),
         .i_e_clk(i_e_clk),
+        .o_e_longdelay(o_e_longdelay),
         .o_e_shortdelay(o_e_shortdelay)
     );
 
